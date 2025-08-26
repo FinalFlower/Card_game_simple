@@ -1,0 +1,21 @@
+# LingCard/config.yaml
+game_settings:
+  initial_hp: 15
+  initial_hand_size: 3
+  characters_per_player: 2
+  deck_composition:
+    # 卡牌类名: 数量
+    AttackCard: 10
+    HealCard: 10
+    DefendCard: 10
+
+team_effects:
+  - characters: ["Jun", "Liuli"]
+    effect: JUN_LIULI
+    description: "俊+琉璃组合：每回合第一次攻击+1"
+  - characters: ["Cafe", "Xinhe"]
+    effect: CAFE_XINHE
+    description: "Cafe+星河组合：每回合额外抽取2张卡"
+  - characters: ["Yangguang", "Liuli"]
+    effect: YANGGUANG_LIULI
+    description: "阳光+琉璃组合：免除第一次伤害"
