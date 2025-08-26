@@ -679,6 +679,7 @@
             players: {
                 player1: { 
                     characters: [], 
+                    characterInstances: [],
                     hand: [], 
                     deck: [], 
                     discard: [],
@@ -687,6 +688,7 @@
                 },
                 player2: { 
                     characters: [], 
+                    characterInstances: [],
                     hand: [], 
                     deck: [], 
                     discard: [],
@@ -896,28 +898,52 @@
         
         // 初始化角色区域
         function initCharacterSlots() {
+            // 为每个玩家创建独立的角色实例
+            gameData.players.player1.characterInstances = [];
+            gameData.players.player2.characterInstances = [];
+            
             // 玩家1的角色
             const player1Slots = document.querySelectorAll('#player1-area .character-slot');
             for (let i = 0; i < 2; i++) {
                 const charName = gameData.players.player1.characters[i];
-                player1Slots[i].setAttribute('data-character', charName);
-                player1Slots[i].querySelector('h3').textContent = gameData.characters[charName].name;
+                const charTemplate = gameData.characters[charName];
                 
-                // 初始化角色数据
-                gameData.characters[charName].health = 15;
-                gameData.characters[charName].maxHealth = 15;
+                // 创建独立的角色实例
+                const charInstance = {
+                    name: charTemplate.name,
+                    health: charTemplate.maxHealth,
+                    maxHealth: charTemplate.maxHealth,
+                    skill: charTemplate.skill,
+                    skills: charTemplate.skills || [],
+                    originalKey: charTemplate.originalKey || charName
+                };
+                
+                gameData.players.player1.characterInstances.push(charInstance);
+                
+                player1Slots[i].setAttribute('data-character', charName);
+                player1Slots[i].querySelector('h3').textContent = charInstance.name;
             }
             
             // 玩家2的角色
             const player2Slots = document.querySelectorAll('#player2-area .character-slot');
             for (let i = 0; i < 2; i++) {
                 const charName = gameData.players.player2.characters[i];
-                player2Slots[i].setAttribute('data-character', charName);
-                player2Slots[i].querySelector('h3').textContent = gameData.characters[charName].name;
+                const charTemplate = gameData.characters[charName];
                 
-                // 初始化角色数据
-                gameData.characters[charName].health = 15;
-                gameData.characters[charName].maxHealth = 15;
+                // 创建独立的角色实例
+                const charInstance = {
+                    name: charTemplate.name,
+                    health: charTemplate.maxHealth,
+                    maxHealth: charTemplate.maxHealth,
+                    skill: charTemplate.skill,
+                    skills: charTemplate.skills || [],
+                    originalKey: charTemplate.originalKey || charName
+                };
+                
+                gameData.players.player2.characterInstances.push(charInstance);
+                
+                player2Slots[i].setAttribute('data-character', charName);
+                player2Slots[i].querySelector('h3').textContent = charInstance.name;
             }
             
             // 检查并触发队伍效果
@@ -1033,8 +1059,8 @@
                     targetPlayer = 'player2';
                     
                     // 优先治疗血量低的角色
-                    const char1Health = gameData.characters[ai.characters[0]].health;
-                    const char2Health = gameData.characters[ai.characters[1]].health;
+                    const char1Health = gameData.players.player2.characterInstances[0].health;
+                    const char2Health = gameData.players.player2.characterInstances[1].health;
                     
                     targetCharIndex = char1Health <= char2Health ? 0 : 1;
                 } else {
@@ -1152,8 +1178,7 @@
         function useCard(cardIndex, targetPlayer, targetCharIndex) {
             const player = gameData.players[gameData.currentPlayer];
             const card = player.hand[cardIndex];
-            const targetCharName = gameData.players[targetPlayer].characters[targetCharIndex];
-            const targetChar = gameData.characters[targetCharName];
+            const targetChar = gameData.players[targetPlayer].characterInstances[targetCharIndex];
             
             const currentPlayerName = gameData.currentPlayer === 'player1' ? '玩家1' : (gameData.mode === 'ai' ? 'AI' : '玩家2');
             const targetPlayerName = targetPlayer === 'player1' ? '玩家1' : (gameData.mode === 'ai' ? 'AI' : '玩家2');
@@ -1181,19 +1206,19 @@
                     }
                     
                     // 俊技能：伤害减免
-                    if (targetCharName === '俊') {
-                        const俊 = gameData.players[targetPlayer];
-                        if (俊.damageReductionCount === undefined) 俊.damageReductionCount = 0;
+                    if (targetChar.originalKey === 'jun' || targetChar.name === '俊') {
+                        const targetPlayerData = gameData.players[targetPlayer];
+                        if (targetPlayerData.damageReductionCount === undefined) targetPlayerData.damageReductionCount = 0;
                         
-                        if (俊.damageReductionCount < 2) {
+                        if (targetPlayerData.damageReductionCount < 2) {
                             damage -= 1;
-                            俊.damageReductionCount++;
+                            targetPlayerData.damageReductionCount++;
                             addLog("【俊】技能触发：伤害减少1点！");
                         }
                     }
                     
                     // 琉璃技能：概率免疫并反击
-                    if (targetCharName === '琉璃') {
+                    if (targetChar.originalKey === 'liuli' || targetChar.name === '琉璃') {
                         const rand = Math.floor(Math.random() * 6) + 1;
                         if (rand === 6) {
                             addLog("【琉璃】技能触发：免疫攻击并反击！");
@@ -1201,8 +1226,7 @@
                             // 反击
                             const attackerPlayer = gameData.currentPlayer;
                             const attackerCharIndex = 0; // 默认攻击第一个角色
-                            const attackerCharName = gameData.players[attackerPlayer].characters[attackerCharIndex];
-                            const attackerChar = gameData.characters[attackerCharName];
+                            const attackerChar = gameData.players[attackerPlayer].characterInstances[attackerCharIndex];
                             
                             attackerChar.health -= 2;
                             addLog(`【琉璃】反击对【${attackerChar.name}】造成2点伤害！`);
@@ -1284,8 +1308,7 @@
             // 更新玩家1的角色
             const player1Slots = document.querySelectorAll('#player1-area .character-slot');
             for (let i = 0; i < 2; i++) {
-                const charName = gameData.players.player1.characters[i];
-                const char = gameData.characters[charName];
+                const char = gameData.players.player1.characterInstances[i];
                 
                 const healthValue = player1Slots[i].querySelector('.health-value');
                 healthValue.textContent = char.health;
@@ -1310,8 +1333,7 @@
             // 更新玩家2的角色
             const player2Slots = document.querySelectorAll('#player2-area .character-slot');
             for (let i = 0; i < 2; i++) {
-                const charName = gameData.players.player2.characters[i];
-                const char = gameData.characters[charName];
+                const char = gameData.players.player2.characterInstances[i];
                 
                 const healthValue = player2Slots[i].querySelector('.health-value');
                 healthValue.textContent = char.health;
@@ -1337,12 +1359,10 @@
         // 检查游戏是否结束
         function checkGameEnd() {
             // 检查玩家1的角色是否全部阵亡
-            const player1Chars = gameData.players.player1.characters;
-            const player1Alive = player1Chars.some(char => gameData.characters[char].health > 0);
+            const player1Alive = gameData.players.player1.characterInstances.some(char => char.health > 0);
             
             // 检查玩家2的角色是否全部阵亡
-            const player2Chars = gameData.players.player2.characters;
-            const player2Alive = player2Chars.some(char => gameData.characters[char].health > 0);
+            const player2Alive = gameData.players.player2.characterInstances.some(char => char.health > 0);
             
             if (!player1Alive) {
                 const winner = gameData.mode === 'ai' ? 'AI' : '玩家2';
@@ -1397,6 +1417,7 @@
             // 重置游戏数据
             gameData.players.player1 = { 
                 characters: [], 
+                characterInstances: [],
                 hand: [], 
                 deck: [], 
                 discard: [],
@@ -1406,6 +1427,7 @@
             
             gameData.players.player2 = { 
                 characters: [], 
+                characterInstances: [],
                 hand: [], 
                 deck: [], 
                 discard: [],
