@@ -93,10 +93,7 @@
 
 ```
 Game/
-├── main_optimized.py          # 主游戏文件（优化版）
-├── game_base.py              # 游戏基础类
-├── game_engine.py            # 游戏引擎和AI
-├── simple_data_loader.py     # 简化数据加载器
+├── index.html                # 页面文件
 ├── characters.yaml           # 角色配置文件
 ├── action_cards.yaml         # 行动卡配置文件
 └── README.md                 # 说明文档
