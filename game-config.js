@@ -8,7 +8,7 @@ window.GameConfig = {
             display_name: "Cafe",
             max_hp: 15,
             description: "每回合第一次造成伤害时伤害加1",
-            avatar: "default.png",
+            avatar: "https://q1.qlogo.cn/g?b=qq&nk=3074917151&s=100",
             skills: [
                 {
                     name: "首击强化",
@@ -25,7 +25,7 @@ window.GameConfig = {
             display_name: "星河",
             max_hp: 15,
             description: "每回合不使用技能时抽取一个行动卡",
-            avatar: "default.png",
+            avatar: "https://q1.qlogo.cn/g?b=qq&nk=1070754640&s=100",
             skills: [
                 {
                     name: "静谧抽卡",
@@ -42,7 +42,7 @@ window.GameConfig = {
             display_name: "阳光",
             max_hp: 15,
             description: "对方回合没有使用攻击卡时，下回合额外抽取2张卡",
-            avatar: "default.png",
+            avatar: "https://q1.qlogo.cn/g?b=qq&nk=1834437956&s=100",
             skills: [
                 {
                     name: "和平奖励",
@@ -59,7 +59,7 @@ window.GameConfig = {
             display_name: "琉璃",
             max_hp: 15,
             description: "受到攻击时进行1-6随机判定，6时免疫并反击2点",
-            avatar: "default.png",
+            avatar: "https://q1.qlogo.cn/g?b=qq&nk=3148403704&s=100",
             skills: [
                 {
                     name: "幸运反击",
@@ -80,7 +80,7 @@ window.GameConfig = {
             display_name: "俊",
             max_hp: 15,
             description: "可以帮队友承受伤害（每回合一次），前两次伤害减1",
-            avatar: "default.png",
+            avatar: "https://q1.qlogo.cn/g?b=qq&nk=1413599052&s=100",
             skills: [
                 {
                     name: "护盾守护",
