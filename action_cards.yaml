@@ -1,0 +1,36 @@
+# 行动卡配置文件
+# 定义所有行动卡的类型、效果和数量
+
+action_cards:
+  attack:
+    name: "attack"
+    display_name: "攻击"
+    description: "减少对方3点生命值"
+    target_type: "enemy"  # enemy(敌方), ally(己方), self(自己)
+    effect_type: "damage"
+    base_value: 3
+    quantity: 10  # 牌库中的数量
+    
+  heal:
+    name: "heal"
+    display_name: "回血"
+    description: "增加自身2点生命值"
+    target_type: "ally"
+    effect_type: "heal"
+    base_value: 2
+    quantity: 10
+    
+  defend:
+    name: "defend"
+    display_name: "防御"
+    description: "下一次受到伤害减少1点"
+    target_type: "ally"
+    effect_type: "defense"
+    base_value: 1
+    quantity: 10
+
+# 牌库配置
+deck_config:
+  total_cards: 30
+  cards_per_turn: 3  # 每回合抽取的卡牌数量
+  reshuffle_when_empty: true  # 牌库用完时是否重洗弃牌堆
