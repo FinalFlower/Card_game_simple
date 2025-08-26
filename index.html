@@ -1,0 +1,1615 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>卡牌对战游戏 - AI模式</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Arial', sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #1a2a6c, #b21f1f, #fdbb2d);
+            min-height: 100vh;
+            padding: 20px;
+            color: white;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        h1 {
+            text-align: center;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+        
+        /* 游戏阶段样式 */
+        .game-phase {
+            display: none;
+            background: rgba(0, 0, 0, 0.7);
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        #mode-selection {
+            display: block;
+            text-align: center;
+        }
+        
+        .mode-options {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin: 30px 0;
+        }
+        
+        .mode-btn {
+            width: 200px;
+            height: 200px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+        
+        .mode-btn:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            background: rgba(255, 255, 255, 0.2);
+        }
+        
+        .mode-btn i {
+            font-size: 60px;
+            margin-bottom: 15px;
+        }
+        
+        /* 角色选择区域 */
+        .selection-area {
+            display: flex;
+            justify-content: space-around;
+            flex-wrap: wrap;
+            margin: 20px 0;
+        }
+        
+        .player-selection {
+            width: 45%;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .character-cards {
+            display: flex;
+            justify-content: space-around;
+            flex-wrap: wrap;
+        }
+        
+        .character-card {
+            width: 120px;
+            height: 160px;
+            background: #2c3e50;
+            border-radius: 10px;
+            margin: 10px;
+            padding: 10px;
+            text-align: center;
+            cursor: pointer;
+            transition: transform 0.3s, box-shadow 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .character-card .avatar {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            margin: 0 auto 10px;
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            border: 2px solid #fff;
+        }
+        
+        .character-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+        
+        .character-card.selected {
+            border: 3px solid gold;
+            transform: translateY(-5px);
+        }
+        
+        .character-card h3 {
+            font-size: 16px;
+            margin-bottom: 10px;
+        }
+        
+        .character-card p {
+            font-size: 12px;
+        }
+        
+        /* 游戏主界面 */
+        #game-board {
+            display: none;
+        }
+        
+        .game-area {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+        
+        .player-area {
+            width: 45%;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 15px;
+        }
+        
+        .player-title {
+            text-align: center;
+            margin-bottom: 15px;
+            font-size: 20px;
+        }
+        
+        .character-slots {
+            display: flex;
+            justify-content: space-around;
+        }
+        
+        .character-slot {
+            width: 45%;
+            background: #34495e;
+            border-radius: 10px;
+            padding: 10px;
+            text-align: center;
+            margin: 5px;
+            position: relative;
+        }
+        
+        .character-slot .avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            margin: 0 auto 5px;
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            border: 2px solid #fff;
+        }
+        
+        .health-bar {
+            height: 20px;
+            background: #555;
+            border-radius: 10px;
+            margin: 10px 0;
+            overflow: hidden;
+        }
+        
+        .health-fill {
+            height: 100%;
+            background: #2ecc71;
+            border-radius: 10px;
+            transition: width 0.5s;
+        }
+        
+        /* 手牌区域 */
+        .hand-cards {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-top: 20px;
+            min-height: 150px;
+        }
+        
+        .action-card {
+            width: 80px;
+            height: 120px;
+            border-radius: 8px;
+            margin: 5px;
+            padding: 10px;
+            text-align: center;
+            cursor: pointer;
+            transition: transform 0.3s;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+        
+        .action-card:hover {
+            transform: translateY(-10px);
+        }
+        
+        .action-card.attack {
+            background: linear-gradient(to bottom, #e74c3c, #c0392b);
+        }
+        
+        .action-card.heal {
+            background: linear-gradient(to bottom, #2ecc71, #27ae60);
+        }
+        
+        .action-card.defense {
+            background: linear-gradient(to bottom, #f39c12, #d35400);
+        }
+        
+        /* 按钮样式 */
+        .btn {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px;
+            transition: background 0.3s;
+        }
+        
+        .btn:hover {
+            background: #2980b9;
+        }
+        
+        .btn:disabled {
+            background: #95a5a6;
+            cursor: not-allowed;
+        }
+        
+        .btn-container {
+            text-align: center;
+            margin-top: 20px;
+        }
+        
+        /* 游戏日志 */
+        .game-log {
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 10px;
+            padding: 15px;
+            height: 150px;
+            overflow-y: auto;
+            margin-top: 20px;
+        }
+        
+        .log-entry {
+            margin-bottom: 5px;
+            font-size: 14px;
+        }
+        
+        .current-player-indicator {
+            text-align: center;
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            padding: 10px;
+            background: rgba(52, 152, 219, 0.3);
+            border-radius: 5px;
+        }
+        
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .selection-area, .game-area {
+                flex-direction: column;
+            }
+            
+            .player-selection, .player-area {
+                width: 100%;
+                margin-bottom: 20px;
+            }
+            
+            .character-cards, .character-slots {
+                flex-wrap: wrap;
+            }
+            
+            .character-card, .character-slot {
+                width: 100%;
+                margin-bottom: 10px;
+            }
+            
+            .mode-options {
+                flex-direction: column;
+                align-items: center;
+            }
+        }
+        
+        .card-name {
+            font-weight: bold;
+            font-size: 14px;
+        }
+        
+        .card-effect {
+            font-size: 12px;
+        }
+        
+        .character-slot.dead {
+            opacity: 0.5;
+            background: #555;
+        }
+        
+        .character-slot.dead::after {
+            content: "💀";
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 30px;
+            z-index: 10;
+        }
+        
+        .defense-indicator {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background: gold;
+            color: black;
+            border-radius: 50%;
+            width: 25px;
+            height: 25px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+        
+        .ai-thinking {
+            text-align: center;
+            font-style: italic;
+            margin: 10px 0;
+            color: #3498db;
+        }
+
+        .error-message {
+            text-align: center;
+            color: #e74c3c;
+            font-size: 18px;
+            padding: 20px;
+            background: rgba(231, 76, 60, 0.1);
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- 游戏配置文件 -->
+    <script src="game-config.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>卡牌对战游戏</h1>
+        
+        <!-- 模式选择阶段 -->
+        <div id="mode-selection" class="game-phase">
+            <h2>选择游戏模式</h2>
+            <div id="loading-indicator" style="display: block; text-align: center; margin: 20px 0;">
+                <i class="fas fa-spinner fa-spin" style="font-size: 24px; margin-right: 10px;"></i>
+                <span>正在加载游戏配置...</span>
+            </div>
+            <div id="error-message" class="error-message" style="display: none;">
+                配置文件加载失败！请确保 game-config.js 文件存在且格式正确。
+            </div>
+            <div class="mode-options" id="mode-options" style="display: none;">
+                <div class="mode-btn" id="pvp-mode">
+                    <i class="fas fa-users"></i>
+                    <h3>玩家对战</h3>
+                    <p>与另一位玩家对战</p>
+                </div>
+                <div class="mode-btn" id="ai-mode">
+                    <i class="fas fa-robot"></i>
+                    <h3>AI对战</h3>
+                    <p>与电脑AI对战</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 角色选择阶段 -->
+        <div id="character-selection" class="game-phase">
+            <h2 id="selection-title">选择角色</h2>
+            <div class="selection-area">
+                <div class="player-selection" id="player1-selection">
+                    <h3>玩家1</h3>
+                    <p>请选择两个角色</p>
+                    <div class="character-cards">
+                        <!-- 角色卡片将由JavaScript动态生成 -->
+                    </div>
+                </div>
+                
+                <div class="player-selection" id="player2-selection">
+                    <h3 id="player2-title">玩家2</h3>
+                    <p>请选择两个角色</p>
+                    <div class="character-cards">
+                        <!-- 角色卡片将由JavaScript动态生成 -->
+                    </div>
+                </div>
+            </div>
+            
+            <div class="btn-container">
+                <button id="confirm-selection" class="btn">确认选择</button>
+                <button id="back-to-mode" class="btn">返回</button>
+            </div>
+        </div>
+        
+        <!-- 游戏主界面 -->
+        <div id="game-board" class="game-phase">
+            <div class="current-player-indicator" id="current-player-indicator">
+                当前回合: 玩家1
+            </div>
+            
+            <div id="ai-thinking" class="ai-thinking" style="display: none;">
+                <i class="fas fa-robot"></i> AI正在思考中...
+            </div>
+            
+            <div class="game-area">
+                <div class="player-area" id="player1-area">
+                    <h2 class="player-title">玩家1</h2>
+                    <div class="character-slots">
+                        <div class="character-slot" data-character="cafe" data-index="0">
+                            <h3>Cafe</h3>
+                            <div class="health-bar">
+                                <div class="health-fill" style="width: 100%;"></div>
+                            </div>
+                            <p>生命值: <span class="health-value">15</span>/15</p>
+                        </div>
+                        <div class="character-slot" data-character="星河" data-index="1">
+                            <h3>星河</h3>
+                            <div class="health-bar">
+                                <div class="health-fill" style="width: 100%;"></div>
+                            </div>
+                            <p>生命值: <span class="health-value">15</span>/15</p>
+                        </div>
+                    </div>
+                    
+                    <h3>手牌</h3>
+                    <div class="hand-cards" id="player1-hand">
+                        <!-- 行动卡将通过JS动态添加 -->
+                    </div>
+                </div>
+                
+                <div class="player-area" id="player2-area">
+                    <h2 class="player-title" id="player2-name">玩家2</h2>
+                    <div class="character-slots">
+                        <div class="character-slot" data-character="阳光" data-index="0">
+                            <h3>阳光</h3>
+                            <div class="health-bar">
+                                <div class="health-fill" style="width: 100%;"></div>
+                            </div>
+                            <p>生命值: <span class="health-value">15</span>/15</p>
+                        </div>
+                        <div class="character-slot" data-character="琉璃" data-index="1">
+                            <h3>琉璃</h3>
+                            <div class="health-bar">
+                                <div class="health-fill" style="width: 100%;"></div>
+                            </div>
+                            <p>生命值: <span class="health-value">15</span>/15</p>
+                        </div>
+                    </div>
+                    
+                    <h3>手牌</h3>
+                    <div class="hand-cards" id="player2-hand">
+                        <!-- 行动卡将通过JS动态添加 -->
+                    </div>
+                </div>
+            </div>
+            
+            <div class="btn-container">
+                <button id="end-turn" class="btn">结束回合</button>
+                <button id="restart-game" class="btn">重新开始</button>
+            </div>
+            
+            <div class="game-log" id="game-log">
+                <div class="log-entry">游戏开始！请选择模式。</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 调试信息 -->
+    <div id="debug-info" style="position: fixed; bottom: 10px; right: 10px; background: rgba(0,0,0,0.8); color: white; padding: 10px; font-size: 12px; border-radius: 5px; max-width: 300px; display: none;">
+        <div><strong>调试信息</strong></div>
+        <div>角色数量: <span id="char-count">0</span></div>
+        <div>卡牌类型: <span id="card-count">0</span></div>
+        <div>配置来源: <span id="yaml-status">未加载</span></div>
+    </div>
+
+    <script>
+        
+        // 配置加载函数 - 只从JavaScript配置文件加载
+        function loadGameConfig() {
+            console.log('开始加载配置文件...');
+            console.log('检查 window.GameConfig:', window.GameConfig);
+            
+            // 检查外部配置文件是否存在
+            if (!window.GameConfig) {
+                console.error('配置文件未找到！');
+                showError('配置文件 game-config.js 未找到或未正确加载！');
+                return false;
+            }
+
+            console.log('GameConfig.characters:', window.GameConfig.characters);
+            console.log('GameConfig.action_cards:', window.GameConfig.action_cards);
+
+            // 验证配置文件格式
+            if (!window.GameConfig.characters || !window.GameConfig.action_cards) {
+                console.error('配置文件格式不正确！');
+                showError('配置文件格式不正确！缺少必要的 characters 或 action_cards 配置。');
+                return false;
+            }
+
+            try {
+                console.log('开始解析配置数据...');
+                
+                // 加载角色数据
+                gameData.characters = window.GameConfig.characters;
+                console.log('角色数据加载完成:', Object.keys(gameData.characters));
+                
+                // 加载行动卡数据，转换为数组格式
+                gameData.actionCards = [];
+                Object.entries(window.GameConfig.action_cards).forEach(([key, card]) => {
+                    for (let i = 0; i < (card.quantity || 1); i++) {
+                        gameData.actionCards.push({
+                            name: card.display_name || card.name,
+                            type: card.name,
+                            description: card.description,
+                            targetType: card.target_type,
+                            effectType: card.effect_type,
+                            baseValue: card.base_value
+                        });
+                    }
+                });
+                console.log('行动卡数据加载完成:', gameData.actionCards.length, '张卡');
+                
+                // 加载队伍效果数据
+                gameData.teamEffects = window.GameConfig.team_effects || {};
+                console.log('队伍效果数据加载完成:', Object.keys(gameData.teamEffects));
+                
+                console.log('开始更新角色选择界面...');
+                // 更新界面
+                updateCharacterSelectionUI();
+                console.log('角色选择界面更新完成');
+                
+                console.log('显示模式选择界面...');
+                // 显示模式选择
+                loadingIndicator.style.display = 'none';
+                modeOptions.style.display = 'flex';
+                
+                console.log('游戏配置已加载（从 game-config.js）');
+                return true;
+                
+            } catch (error) {
+                console.error('配置文件解析错误:', error);
+                showError('配置文件解析失败：' + error.message);
+                return false;
+            }
+        }
+
+        // 显示错误信息
+        function showError(message) {
+            loadingIndicator.style.display = 'none';
+            errorMessage.textContent = message;
+            errorMessage.style.display = 'block';
+        }
+        
+        // 更新角色选择界面
+        function updateCharacterSelectionUI() {
+            const characterCardContainers = document.querySelectorAll('.character-cards');
+            
+            characterCardContainers.forEach(container => {
+                container.innerHTML = '';
+                
+                Object.entries(gameData.characters).forEach(([key, character]) => {
+                    const card = document.createElement('div');
+                    card.className = 'character-card';
+                    card.setAttribute('data-character', key);
+                    
+                    card.innerHTML = `
+                        <div class="avatar" style="background-image: url('${character.avatar || 'default.png'}')"></div>
+                        <h3>${character.display_name || character.name}</h3>
+                        <p>${character.description}</p>
+                    `;
+                    
+                    container.appendChild(card);
+                });
+            });
+            
+            // 重新添加事件监听器
+            const characterCards = document.querySelectorAll('.character-card');
+            characterCards.forEach(card => {
+                card.addEventListener('click', handleCharacterSelection);
+            });
+        }
+        
+        // 游戏数据
+        const gameData = {
+            mode: null, // 'pvp' 或 'ai'
+            characters: {}, // 将从YAML文件加载
+            actionCards: [], // 将从YAML文件加载
+            teamEffects: {}, // 将从YAML文件加载
+            players: {
+                player1: { 
+                    characters: [], 
+                    characterInstances: [],
+                    hand: [], 
+                    deck: [], 
+                    discard: [],
+                    defense: [0, 0], // 每个角色的防御状态
+                    firstAttack: true, // Cafe技能：第一次攻击加成
+                    teamEffects: [] // 当前激活的队伍效果
+                },
+                player2: { 
+                    characters: [], 
+                    characterInstances: [],
+                    hand: [], 
+                    deck: [], 
+                    discard: [],
+                    defense: [0, 0],
+                    firstAttack: true,
+                    teamEffects: [] // 当前激活的队伍效果
+                }
+            },
+            currentPlayer: null,
+            selectedCharacter: null,
+            selectedCard: null,
+            gamePhase: "modeSelection", // modeSelection, characterSelection, gameplay
+            usedAttackThisTurn: false // 阳光技能：本回合是否使用了攻击
+        };
+
+        // DOM元素
+        const modeSelection = document.getElementById('mode-selection');
+        const characterSelection = document.getElementById('character-selection');
+        const gameBoard = document.getElementById('game-board');
+        const loadingIndicator = document.getElementById('loading-indicator');
+        const errorMessage = document.getElementById('error-message');
+        const modeOptions = document.getElementById('mode-options');
+        const pvpModeBtn = document.getElementById('pvp-mode');
+        const aiModeBtn = document.getElementById('ai-mode');
+        const confirmSelectionBtn = document.getElementById('confirm-selection');
+        const backToModeBtn = document.getElementById('back-to-mode');
+        const endTurnBtn = document.getElementById('end-turn');
+        const restartGameBtn = document.getElementById('restart-game');
+        const gameLog = document.getElementById('game-log');
+        const currentPlayerIndicator = document.getElementById('current-player-indicator');
+        const player2Title = document.getElementById('player2-title');
+        const selectionTitle = document.getElementById('selection-title');
+        const player2Name = document.getElementById('player2-name');
+        const aiThinking = document.getElementById('ai-thinking');
+        
+        // 初始化游戏
+        function initGame() {
+            console.log('初始化游戏...');
+            
+            // 加载配置文件
+            if (!loadGameConfig()) {
+                return; // 配置加载失败，停止初始化
+            }
+            
+            // 添加模式选择事件监听
+            pvpModeBtn.addEventListener('click', () => selectMode('pvp'));
+            aiModeBtn.addEventListener('click', () => selectMode('ai'));
+            
+            // 返回按钮事件
+            backToModeBtn.addEventListener('click', backToModeSelection);
+            
+            // 确认选择按钮事件
+            confirmSelectionBtn.addEventListener('click', startGame);
+            
+            // 结束回合按钮事件
+            endTurnBtn.addEventListener('click', endTurn);
+            
+            // 重新开始按钮事件
+            restartGameBtn.addEventListener('click', restartGame);
+            
+            // 添加角色点击事件
+            const characterSlots = document.querySelectorAll('.character-slot');
+            characterSlots.forEach(slot => {
+                slot.addEventListener('click', handleCharacterClick);
+            });
+        }
+        
+        // 选择游戏模式
+        function selectMode(mode) {
+            gameData.mode = mode;
+            
+            // 更新UI
+            if (mode === 'ai') {
+                player2Title.textContent = 'AI选择角色';
+                player2Name.textContent = 'AI';
+                selectionTitle.textContent = '玩家选择角色，AI随机选择角色';
+                
+                // AI模式下，AI自动选择角色
+                setTimeout(() => {
+                    const characterKeys = Object.keys(gameData.characters);
+                    const aiSelection = [];
+                    
+                    // 随机选择两个不同的角色
+                    while (aiSelection.length < 2) {
+                        const randomIndex = Math.floor(Math.random() * characterKeys.length);
+                        const randomChar = characterKeys[randomIndex];
+                        if (!aiSelection.includes(randomChar)) {
+                            aiSelection.push(randomChar);
+                        }
+                    }
+                    
+                    gameData.players.player2.characters = aiSelection;
+                    
+                    // 更新AI选择显示
+                    const aiCards = document.querySelectorAll('#player2-selection .character-card');
+                    aiCards.forEach(card => {
+                        const charKey = card.getAttribute('data-character');
+                        if (aiSelection.includes(charKey)) {
+                            card.classList.add('selected');
+                        }
+                    });
+                    
+                    addLog('AI已自动选择角色');
+                }, 1000);
+            } else {
+                player2Title.textContent = '玩家2选择角色';
+                player2Name.textContent = '玩家2';
+                selectionTitle.textContent = '选择角色';
+            }
+            
+            // 切换到角色选择界面
+            modeSelection.style.display = 'none';
+            characterSelection.style.display = 'block';
+            gameData.gamePhase = 'characterSelection';
+            
+            // 添加角色选择事件监听
+            const characterCards = document.querySelectorAll('.character-card');
+            characterCards.forEach(card => {
+                card.addEventListener('click', handleCharacterSelection);
+            });
+        }
+        
+        // 返回到模式选择
+        function backToModeSelection() {
+            // 重置角色选择
+            const selectedCards = document.querySelectorAll('.character-card.selected');
+            selectedCards.forEach(card => {
+                card.classList.remove('selected');
+            });
+            
+            gameData.players.player1.characters = [];
+            gameData.players.player2.characters = [];
+            
+            // 切换界面
+            characterSelection.style.display = 'none';
+            modeSelection.style.display = 'block';
+            gameData.gamePhase = 'modeSelection';
+        }
+        
+        // 处理角色选择
+        function handleCharacterSelection(e) {
+            const card = e.currentTarget;
+            const parentSection = card.closest('.player-selection');
+            const character = card.getAttribute('data-character');
+            
+            // 在AI模式下，玩家2（AI）的角色已经自动选择，不允许玩家选择
+            if (gameData.mode === 'ai' && parentSection.id === 'player2-selection') {
+                addLog('AI的角色已自动选择，不可更改');
+                return;
+            }
+            
+            // 检查是否已选择两个角色
+            const selectedCount = parentSection.querySelectorAll('.character-card.selected').length;
+            if (selectedCount >= 2 && !card.classList.contains('selected')) {
+                alert('最多只能选择两个角色！');
+                return;
+            }
+            
+            // 切换选择状态
+            card.classList.toggle('selected');
+            
+            // 更新游戏数据
+            const playerId = parentSection.id === 'player1-selection' ? 'player1' : 'player2';
+            if (card.classList.contains('selected')) {
+                gameData.players[playerId].characters.push(character);
+            } else {
+                const index = gameData.players[playerId].characters.indexOf(character);
+                if (index > -1) {
+                    gameData.players[playerId].characters.splice(index, 1);
+                }
+            }
+        }
+        
+        // 开始游戏
+        function startGame() {
+            // 检查玩家1是否选择了两个角色
+            if (gameData.players.player1.characters.length !== 2) {
+                alert('玩家1必须选择两个角色！');
+                return;
+            }
+            
+            // 在PVP模式下，检查玩家2是否选择了两个角色
+            if (gameData.mode === 'pvp' && gameData.players.player2.characters.length !== 2) {
+                alert('玩家2必须选择两个角色！');
+                return;
+            }
+            
+            // 切换到游戏界面
+            characterSelection.style.display = 'none';
+            gameBoard.style.display = 'block';
+            gameData.gamePhase = 'gameplay';
+            
+            // 初始化角色区域
+            initCharacterSlots();
+            
+            // 初始化卡组和手牌
+            initDecks();
+            
+            // 随机选择先手玩家
+            gameData.currentPlayer = Math.random() < 0.5 ? 'player1' : 'player2';
+            addLog(`【${gameData.currentPlayer === 'player1' ? '玩家1' : (gameData.mode === 'ai' ? 'AI' : '玩家2')}】先手！`);
+            
+            // 更新当前玩家指示器
+            updateCurrentPlayerIndicator();
+            
+            // 开始回合
+            startTurn();
+        }
+        
+        // 初始化角色区域
+        function initCharacterSlots() {
+            // 为每个玩家创建独立的角色实例
+            gameData.players.player1.characterInstances = [];
+            gameData.players.player2.characterInstances = [];
+            
+            // 玩家1的角色
+            const player1Slots = document.querySelectorAll('#player1-area .character-slot');
+            for (let i = 0; i < 2; i++) {
+                const charName = gameData.players.player1.characters[i];
+                const charTemplate = gameData.characters[charName];
+                
+                // 创建独立的角色实例
+                const charInstance = {
+                    name: charTemplate.name,
+                    health: charTemplate.maxHealth,
+                    maxHealth: charTemplate.maxHealth,
+                    skill: charTemplate.skill,
+                    skills: charTemplate.skills || [],
+                    originalKey: charTemplate.originalKey || charName,
+                    avatar: charTemplate.avatar || 'default.png'
+                };
+                
+                gameData.players.player1.characterInstances.push(charInstance);
+                
+                player1Slots[i].setAttribute('data-character', charName);
+                player1Slots[i].querySelector('h3').textContent = charInstance.name;
+                
+                // 添加或更新头像
+                let avatarElement = player1Slots[i].querySelector('.avatar');
+                if (!avatarElement) {
+                    avatarElement = document.createElement('div');
+                    avatarElement.className = 'avatar';
+                    player1Slots[i].insertBefore(avatarElement, player1Slots[i].firstChild);
+                }
+                avatarElement.style.backgroundImage = `url('${charInstance.avatar}')`;
+            }
+            
+            // 玩家2的角色
+            const player2Slots = document.querySelectorAll('#player2-area .character-slot');
+            for (let i = 0; i < 2; i++) {
+                const charName = gameData.players.player2.characters[i];
+                const charTemplate = gameData.characters[charName];
+                
+                // 创建独立的角色实例
+                const charInstance = {
+                    name: charTemplate.name,
+                    health: charTemplate.maxHealth,
+                    maxHealth: charTemplate.maxHealth,
+                    skill: charTemplate.skill,
+                    skills: charTemplate.skills || [],
+                    originalKey: charTemplate.originalKey || charName,
+                    avatar: charTemplate.avatar || 'default.png'
+                };
+                
+                gameData.players.player2.characterInstances.push(charInstance);
+                
+                player2Slots[i].setAttribute('data-character', charName);
+                player2Slots[i].querySelector('h3').textContent = charInstance.name;
+                
+                // 添加或更新头像
+                let avatarElement = player2Slots[i].querySelector('.avatar');
+                if (!avatarElement) {
+                    avatarElement = document.createElement('div');
+                    avatarElement.className = 'avatar';
+                    player2Slots[i].insertBefore(avatarElement, player2Slots[i].firstChild);
+                }
+                avatarElement.style.backgroundImage = `url('${charInstance.avatar}')`;
+            }
+            
+            // 检查并触发队伍效果
+            checkTeamEffects();
+            
+            // 更新角色显示
+            updateCharacterDisplays();
+        }
+        
+        // 检查队伍效果
+        function checkTeamEffects() {
+            const p1Chars = gameData.players.player1.characters;
+            const p2Chars = gameData.players.player2.characters;
+            
+            // 检查玩家1的队伍效果
+            if (gameData.teamEffects) {
+                for (const [effectKey, effect] of Object.entries(gameData.teamEffects)) {
+                    const requiredChars = effect.characters;
+                    
+                    // 检查玩家1是否有这个组合
+                    const p1HasCombo = requiredChars.every(charKey => {
+                        // 需要将原始key转换为显示key进行匹配
+                        const displayKey = getDisplayKeyFromOriginalKey(charKey);
+                        return p1Chars.includes(displayKey);
+                    });
+                    
+                    if (p1HasCombo) {
+                        addLog(`【玩家1】触发队伍效果：${effect.name} - ${effect.description}`);
+                        gameData.players.player1.teamEffects = gameData.players.player1.teamEffects || [];
+                        gameData.players.player1.teamEffects.push(effectKey);
+                    }
+                    
+                    // 检查玩家2是否有这个组合
+                    const p2HasCombo = requiredChars.every(charKey => {
+                        const displayKey = getDisplayKeyFromOriginalKey(charKey);
+                        return p2Chars.includes(displayKey);
+                    });
+                    
+                    if (p2HasCombo) {
+                        const playerName = gameData.mode === 'ai' ? 'AI' : '玩家2';
+                        addLog(`【${playerName}】触发队伍效果：${effect.name} - ${effect.description}`);
+                        gameData.players.player2.teamEffects = gameData.players.player2.teamEffects || [];
+                        gameData.players.player2.teamEffects.push(effectKey);
+                    }
+                }
+            }
+        }
+        
+        // 将原始key转换为显示key的辅助函数
+        function getDisplayKeyFromOriginalKey(originalKey) {
+            switch(originalKey) {
+                case 'xinhe': return '星河';
+                case 'yangguang': return '阳光';
+                case 'liuli': return '琉璃';
+                case 'jun': return '俊';
+                case 'cafe': return 'cafe';
+                default: return originalKey;
+            }
+        }
+        
+        // 初始化卡组
+        function initDecks() {
+            // 创建行动卡池
+            let actionCardPool = [];
+            gameData.actionCards.forEach(cardType => {
+                for (let i = 0; i < cardType.count; i++) {
+                    actionCardPool.push({...cardType});
+                }
+            });
+            
+            // 洗牌算法
+            shuffleArray(actionCardPool);
+            
+            // 平分卡池给两个玩家
+            const half = Math.ceil(actionCardPool.length / 2);
+            gameData.players.player1.deck = actionCardPool.slice(0, half);
+            gameData.players.player2.deck = actionCardPool.slice(half, actionCardPool.length);
+        }
+        
+        // 洗牌算法
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+        }
+        
+        // 开始回合
+        function startTurn() {
+            const currentPlayerName = gameData.currentPlayer === 'player1' ? '玩家1' : (gameData.mode === 'ai' ? 'AI' : '玩家2');
+            addLog(`【${currentPlayerName}】的回合开始！`);
+            
+            // 重置Cafe技能
+            gameData.players[gameData.currentPlayer].firstAttack = true;
+            
+            // 抽3张卡
+            drawCards(3);
+            
+            // 更新UI
+            updateHandDisplay();
+            
+            // 启用结束回合按钮
+            endTurnBtn.disabled = false;
+            
+            // 如果是AI的回合，自动执行AI操作
+            if (gameData.mode === 'ai' && gameData.currentPlayer === 'player2') {
+                aiThinking.style.display = 'block';
+                endTurnBtn.disabled = true;
+                
+                // AI延迟思考后行动
+                setTimeout(() => {
+                    executeAITurn();
+                    aiThinking.style.display = 'none';
+                    endTurnBtn.disabled = false;
+                }, 2000);
+            }
+        }
+        
+        // 执行AI回合
+        function executeAITurn() {
+            const ai = gameData.players.player2;
+            
+            // AI简单策略：优先使用攻击卡，其次治疗卡，最后防御卡
+            for (let i = 0; i < ai.hand.length; i++) {
+                const card = ai.hand[i];
+                
+                // 随机选择目标
+                let targetPlayer, targetCharIndex;
+                
+                if (card.type === 'attack') {
+                    // 攻击卡：选择玩家1的存活角色
+                    targetPlayer = 'player1';
+                    const aliveIndices = [];
+                    for (let j = 0; j < 2; j++) {
+                        if (gameData.players.player1.characterInstances[j].health > 0) {
+                            aliveIndices.push(j);
+                        }
+                    }
+                    if (aliveIndices.length > 0) {
+                        targetCharIndex = aliveIndices[Math.floor(Math.random() * aliveIndices.length)];
+                    } else {
+                        continue; // 没有存活的敌方角色，跳过这张攻击卡
+                    }
+                } else if (card.type === 'heal') {
+                    // 治疗卡：选择AI自己的存活角色
+                    targetPlayer = 'player2';
+                    
+                    // 优先治疗血量低的存活角色
+                    const char1 = gameData.players.player2.characterInstances[0];
+                    const char2 = gameData.players.player2.characterInstances[1];
+                    
+                    if (char1.health > 0 && char2.health > 0) {
+                        targetCharIndex = char1.health <= char2.health ? 0 : 1;
+                    } else if (char1.health > 0) {
+                        targetCharIndex = 0;
+                    } else if (char2.health > 0) {
+                        targetCharIndex = 1;
+                    } else {
+                        continue; // 没有存活的己方角色，跳过这张治疗卡
+                    }
+                } else {
+                    // 防御卡：选择AI自己的存活角色
+                    targetPlayer = 'player2';
+                    const aliveIndices = [];
+                    for (let j = 0; j < 2; j++) {
+                        if (gameData.players.player2.characterInstances[j].health > 0) {
+                            aliveIndices.push(j);
+                        }
+                    }
+                    if (aliveIndices.length > 0) {
+                        targetCharIndex = aliveIndices[Math.floor(Math.random() * aliveIndices.length)];
+                    } else {
+                        continue; // 没有存活的己方角色，跳过这张防御卡
+                    }
+                }
+                
+                // 使用卡牌
+                useCard(i, targetPlayer, targetCharIndex);
+                
+                // 每次使用一张卡后稍微延迟一下
+                return; // 一次只使用一张卡
+            }
+            
+            // 如果没有卡可用，结束回合
+            endTurn();
+        }
+        
+        // 抽卡
+        function drawCards(count) {
+            const player = gameData.players[gameData.currentPlayer];
+            
+            for (let i = 0; i < count; i++) {
+                if (player.deck.length === 0) {
+                    // 牌库空，重置弃牌堆
+                    if (player.discard.length === 0) {
+                        addLog('牌库已空，无法抽卡！');
+                        break;
+                    }
+                    player.deck = [...player.discard];
+                    player.discard = [];
+                    shuffleArray(player.deck);
+                    addLog('弃牌堆已洗牌并重新加入牌库！');
+                }
+                
+                const drawnCard = player.deck.pop();
+                player.hand.push(drawnCard);
+            }
+            
+            const currentPlayerName = gameData.currentPlayer === 'player1' ? '玩家1' : (gameData.mode === 'ai' ? 'AI' : '玩家2');
+            addLog(`【${currentPlayerName}】抽取了${count}张卡！`);
+        }
+        
+        // 更新手牌显示
+        function updateHandDisplay() {
+            const handElement = document.getElementById(`${gameData.currentPlayer}-hand`);
+            handElement.innerHTML = '';
+            
+            // 如果是AI的回合，不显示AI的手牌
+            if (gameData.mode === 'ai' && gameData.currentPlayer === 'player2') {
+                const aiHandSize = gameData.players.player2.hand.length;
+                for (let i = 0; i < aiHandSize; i++) {
+                    const cardElement = document.createElement('div');
+                    cardElement.className = 'action-card';
+                    cardElement.innerHTML = `
+                        <div class="card-name">未知卡牌</div>
+                        <div class="card-effect">AI的手牌</div>
+                    `;
+                    handElement.appendChild(cardElement);
+                }
+                return;
+            }
+            
+            gameData.players[gameData.currentPlayer].hand.forEach((card, index) => {
+                const cardElement = document.createElement('div');
+                cardElement.className = `action-card ${card.type}`;
+                cardElement.innerHTML = `
+                    <div class="card-name">${card.name}</div>
+                    <div class="card-effect">${card.effect}</div>
+                `;
+                
+                cardElement.addEventListener('click', () => selectCard(index));
+                handElement.appendChild(cardElement);
+            });
+        }
+        
+        // 选择卡牌
+        function selectCard(cardIndex) {
+            // 如果是AI的回合，玩家不能操作
+            if (gameData.mode === 'ai' && gameData.currentPlayer === 'player2') {
+                addLog('现在是AI的回合，请等待');
+                return;
+            }
+            
+            gameData.selectedCard = cardIndex;
+            
+            const currentPlayerName = gameData.currentPlayer === 'player1' ? '玩家1' : '玩家2';
+            const selectedCard = gameData.players[gameData.currentPlayer].hand[cardIndex];
+            addLog(`【${currentPlayerName}】选择了卡牌：${selectedCard.name}`);
+            
+            // 根据卡牌类型提示选择目标
+            if (selectedCard.type === 'attack') {
+                addLog("请选择一个敌方存活角色作为攻击目标");
+            } else {
+                addLog("请选择一个己方存活角色作为目标");
+            }
+        }
+        
+        // 处理角色点击
+        function handleCharacterClick(e) {
+            if (gameData.selectedCard === null) return;
+            
+            // 如果是AI的回合，玩家不能操作
+            if (gameData.mode === 'ai' && gameData.currentPlayer === 'player2') {
+                addLog('现在是AI的回合，请等待');
+                return;
+            }
+            
+            const slot = e.currentTarget;
+            const playerArea = slot.closest('.player-area');
+            const playerId = playerArea.id === 'player1-area' ? 'player1' : 'player2';
+            const charIndex = parseInt(slot.getAttribute('data-index'));
+            
+            // 获取选中的卡牌信息
+            const selectedCard = gameData.players[gameData.currentPlayer].hand[gameData.selectedCard];
+            
+            // 检查卡牌使用限制
+            if (selectedCard.type === 'attack') {
+                // 攻击卡只能用于敌方角色
+                if (playerId === gameData.currentPlayer) {
+                    addLog('攻击卡不能用于己方角色！');
+                    return;
+                }
+                // 检查目标角色是否存活
+                if (gameData.players[playerId].characterInstances[charIndex].health <= 0) {
+                    addLog('不能攻击已死亡的角色！');
+                    return;
+                }
+            } else {
+                // 治疗卡和防御卡只能用于己方角色
+                if (playerId !== gameData.currentPlayer) {
+                    addLog('治疗卡和防御卡只能用于己方角色！');
+                    return;
+                }
+                // 检查目标角色是否存活
+                if (gameData.players[playerId].characterInstances[charIndex].health <= 0) {
+                    addLog('不能对已死亡的角色使用卡牌！');
+                    return;
+                }
+            }
+            
+            // 使用卡牌
+            useCard(gameData.selectedCard, playerId, charIndex);
+        }
+        
+        // 使用卡牌
+        function useCard(cardIndex, targetPlayer, targetCharIndex) {
+            const player = gameData.players[gameData.currentPlayer];
+            const card = player.hand[cardIndex];
+            const targetChar = gameData.players[targetPlayer].characterInstances[targetCharIndex];
+            
+            const currentPlayerName = gameData.currentPlayer === 'player1' ? '玩家1' : (gameData.mode === 'ai' ? 'AI' : '玩家2');
+            const targetPlayerName = targetPlayer === 'player1' ? '玩家1' : (gameData.mode === 'ai' ? 'AI' : '玩家2');
+            
+            addLog(`【${currentPlayerName}】对【${targetPlayerName}】的${targetChar.name}使用了${card.name}`);
+            
+            // 处理卡牌效果
+            switch(card.type) {
+                case 'attack':
+                    let damage = 3;
+                    
+                    // Cafe技能：第一次攻击加成
+                    if (gameData.currentPlayer === 'player1' && 
+                        gameData.players.player1.firstAttack &&
+                        gameData.players.player1.characters.includes('cafe')) {
+                        damage += 1;
+                        gameData.players.player1.firstAttack = false;
+                        addLog("【Cafe】技能触发：第一次攻击伤害+1！");
+                    } else if (gameData.currentPlayer === 'player2' && 
+                               gameData.players.player2.firstAttack &&
+                               gameData.players.player2.characters.includes('cafe')) {
+                        damage += 1;
+                        gameData.players.player2.firstAttack = false;
+                        addLog("【Cafe】技能触发：第一次攻击伤害+1！");
+                    }
+                    
+                    // 俊技能：伤害减免
+                    if (targetChar.originalKey === 'jun' || targetChar.name === '俊') {
+                        const targetPlayerData = gameData.players[targetPlayer];
+                        if (targetPlayerData.damageReductionCount === undefined) targetPlayerData.damageReductionCount = 0;
+                        
+                        if (targetPlayerData.damageReductionCount < 2) {
+                            damage -= 1;
+                            targetPlayerData.damageReductionCount++;
+                            addLog("【俊】技能触发：伤害减少1点！");
+                        }
+                    }
+                    
+                    // 琉璃技能：概率免疫并反击
+                    if (targetChar.originalKey === 'liuli' || targetChar.name === '琉璃') {
+                        const rand = Math.floor(Math.random() * 6) + 1;
+                        if (rand === 6) {
+                            addLog("【琉璃】技能触发：免疫攻击并反击！");
+                            
+                            // 反击 - 随机选择一个存活的敌方角色
+                            const attackerPlayer = gameData.currentPlayer;
+                            const aliveAttackerIndices = [];
+                            for (let k = 0; k < 2; k++) {
+                                if (gameData.players[attackerPlayer].characterInstances[k].health > 0) {
+                                    aliveAttackerIndices.push(k);
+                                }
+                            }
+                            
+                            if (aliveAttackerIndices.length > 0) {
+                                const attackerCharIndex = aliveAttackerIndices[Math.floor(Math.random() * aliveAttackerIndices.length)];
+                                const attackerChar = gameData.players[attackerPlayer].characterInstances[attackerCharIndex];
+                                
+                                attackerChar.health -= 2;
+                                if (attackerChar.health < 0) attackerChar.health = 0;
+                                
+                                addLog(`【琉璃】反击对【${attackerChar.name}】造成2点伤害！`);
+                                
+                                // 检查反击是否击倒目标
+                                if (attackerChar.health === 0) {
+                                    addLog(`【${attackerChar.name}】被琉璃的反击击倒了！`);
+                                }
+                            };
+                            
+                            // 更新角色显示
+                            updateCharacterDisplays();
+                            
+                            // 检查游戏是否结束
+                            if (checkGameEnd()) return;
+                            
+                            // 从手牌中移除使用的卡牌，加入弃牌堆
+                            const usedCard = player.hand.splice(cardIndex, 1)[0];
+                            player.discard.push(usedCard);
+                            
+                            // 重置选择
+                            gameData.selectedCard = null;
+                            
+                            // 更新手牌显示
+                            updateHandDisplay();
+                            return;
+                        }
+                    }
+                    
+                    // 防御状态减少伤害
+                    if (gameData.players[targetPlayer].defense[targetCharIndex] > 0) {
+                        damage -= 1;
+                        gameData.players[targetPlayer].defense[targetCharIndex]--;
+                        addLog("防御状态减少1点伤害！");
+                    }
+                    
+                    // 造成伤害
+                    targetChar.health -= damage;
+                    if (targetChar.health < 0) targetChar.health = 0;
+                    
+                    addLog(`造成${damage}点伤害！`);
+                    
+                    // 检查角色是否死亡
+                    if (targetChar.health === 0) {
+                        addLog(`【${targetChar.name}】被击倒了！`);
+                    }
+                    
+                    // 标记本回合使用了攻击（用于阳光技能）
+                    gameData.usedAttackThisTurn = true;
+                    break;
+                    
+                case 'heal':
+                    // 治疗
+                    targetChar.health += 2;
+                    if (targetChar.health > targetChar.maxHealth) targetChar.health = targetChar.maxHealth;
+                    addLog("恢复2点生命值！");
+                    break;
+                    
+                case 'defense':
+                    // 防御
+                    gameData.players[targetPlayer].defense[targetCharIndex]++;
+                    addLog("获得1点防御，下一次受到的伤害减少1点！");
+                    console.log(`防御值更新: 玩家${targetPlayer} 角色${targetCharIndex} 防御值: ${gameData.players[targetPlayer].defense[targetCharIndex]}`);
+                    break;
+            }
+            
+            // 从手牌中移除使用的卡牌，加入弃牌堆
+            const usedCard = player.hand.splice(cardIndex, 1)[0];
+            player.discard.push(usedCard);
+            
+            // 重置选择
+            gameData.selectedCard = null;
+            
+            // 更新角色显示
+            updateCharacterDisplays();
+            
+            // 更新手牌显示
+            updateHandDisplay();
+            
+            // 检查游戏是否结束
+            if (checkGameEnd()) return;
+            
+            // 如果是AI的回合，继续执行AI操作
+            if (gameData.mode === 'ai' && gameData.currentPlayer === 'player2') {
+                setTimeout(executeAITurn, 1000);
+            }
+        }
+        
+        // 更新角色显示
+        function updateCharacterDisplays() {
+            // 更新玩家1的角色
+            const player1Slots = document.querySelectorAll('#player1-area .character-slot');
+            for (let i = 0; i < 2; i++) {
+                const char = gameData.players.player1.characterInstances[i];
+                
+                const healthValue = player1Slots[i].querySelector('.health-value');
+                healthValue.textContent = char.health;
+                
+                const healthFill = player1Slots[i].querySelector('.health-fill');
+                healthFill.style.width = (char.health / char.maxHealth * 100) + '%';
+                
+                // 设置死亡状态
+                if (char.health <= 0) {
+                    player1Slots[i].classList.add('dead');
+                    healthFill.style.background = '#888';
+                } else {
+                    player1Slots[i].classList.remove('dead');
+                    healthFill.style.background = '#2ecc71';
+                }
+                
+                // 更新防御指示器
+                let defenseIndicator = player1Slots[i].querySelector('.defense-indicator');
+                if (gameData.players.player1.defense[i] > 0 && char.health > 0) {
+                    if (!defenseIndicator) {
+                        defenseIndicator = document.createElement('div');
+                        defenseIndicator.className = 'defense-indicator';
+                        player1Slots[i].appendChild(defenseIndicator);
+                        console.log(`创建玩家1角色${i}的防御指示器`);
+                    }
+                    defenseIndicator.textContent = gameData.players.player1.defense[i];
+                    console.log(`玩家1角色${i}防御值显示: ${gameData.players.player1.defense[i]}`);
+                } else if (defenseIndicator) {
+                    defenseIndicator.remove();
+                    console.log(`移除玩家1角色${i}的防御指示器`);
+                }
+                
+                // 更新头像
+                let avatarElement = player1Slots[i].querySelector('.avatar');
+                if (!avatarElement) {
+                    avatarElement = document.createElement('div');
+                    avatarElement.className = 'avatar';
+                    player1Slots[i].insertBefore(avatarElement, player1Slots[i].firstChild);
+                }
+                avatarElement.style.backgroundImage = `url('${char.avatar}')`;
+            }
+            
+            // 更新玩家2的角色
+            const player2Slots = document.querySelectorAll('#player2-area .character-slot');
+            for (let i = 0; i < 2; i++) {
+                const char = gameData.players.player2.characterInstances[i];
+                
+                const healthValue = player2Slots[i].querySelector('.health-value');
+                healthValue.textContent = char.health;
+                
+                const healthFill = player2Slots[i].querySelector('.health-fill');
+                healthFill.style.width = (char.health / char.maxHealth * 100) + '%';
+                
+                // 设置死亡状态
+                if (char.health <= 0) {
+                    player2Slots[i].classList.add('dead');
+                    healthFill.style.background = '#888';
+                } else {
+                    player2Slots[i].classList.remove('dead');
+                    healthFill.style.background = '#2ecc71';
+                }
+                
+                // 更新防御指示器
+                let defenseIndicator = player2Slots[i].querySelector('.defense-indicator');
+                if (gameData.players.player2.defense[i] > 0 && char.health > 0) {
+                    if (!defenseIndicator) {
+                        defenseIndicator = document.createElement('div');
+                        defenseIndicator.className = 'defense-indicator';
+                        player2Slots[i].appendChild(defenseIndicator);
+                        console.log(`创建玩家2角色${i}的防御指示器`);
+                    }
+                    defenseIndicator.textContent = gameData.players.player2.defense[i];
+                    console.log(`玩家2角色${i}防御值显示: ${gameData.players.player2.defense[i]}`);
+                } else if (defenseIndicator) {
+                    defenseIndicator.remove();
+                    console.log(`移除玩家2角色${i}的防御指示器`);
+                }
+                
+                // 更新头像
+                let avatarElement = player2Slots[i].querySelector('.avatar');
+                if (!avatarElement) {
+                    avatarElement = document.createElement('div');
+                    avatarElement.className = 'avatar';
+                    player2Slots[i].insertBefore(avatarElement, player2Slots[i].firstChild);
+                }
+                avatarElement.style.backgroundImage = `url('${char.avatar}')`;
+            }
+        }
+        
+        // 检查游戏是否结束
+        function checkGameEnd() {
+            // 检查玩家1的角色是否全部阵亡
+            const player1Alive = gameData.players.player1.characterInstances.some(char => char.health > 0);
+            
+            // 检查玩家2的角色是否全部阵亡
+            const player2Alive = gameData.players.player2.characterInstances.some(char => char.health > 0);
+            
+            if (!player1Alive) {
+                const winner = gameData.mode === 'ai' ? 'AI' : '玩家2';
+                addLog(`${winner}获胜！游戏结束！`);
+                endTurnBtn.disabled = true;
+                return true;
+            }
+            
+            if (!player2Alive) {
+                addLog("玩家1获胜！游戏结束！");
+                endTurnBtn.disabled = true;
+                return true;
+            }
+            
+            return false;
+        }
+        
+        // 结束回合
+        function endTurn() {
+            const currentPlayerName = gameData.currentPlayer === 'player1' ? '玩家1' : (gameData.mode === 'ai' ? 'AI' : '玩家2');
+            addLog(`【${currentPlayerName}】的回合结束！`);
+            
+            // 阳光技能：如果对方没有使用攻击，下回合额外抽2张卡
+            const nextPlayer = gameData.currentPlayer === 'player1' ? 'player2' : 'player1';
+            if (gameData.players[nextPlayer].characters.includes('阳光') && !gameData.usedAttackThisTurn) {
+                const nextPlayerName = nextPlayer === 'player1' ? '玩家1' : (gameData.mode === 'ai' ? 'AI' : '玩家2');
+                addLog(`【阳光】技能触发：对方回合没有使用攻击，${nextPlayerName}下回合额外抽取2张卡！`);
+                gameData.players[nextPlayer].extraCards = 2;
+            }
+            
+            // 重置攻击标记
+            gameData.usedAttackThisTurn = false;
+            
+            // 切换玩家
+            gameData.currentPlayer = nextPlayer;
+            
+            // 更新当前玩家指示器
+            updateCurrentPlayerIndicator();
+            
+            // 开始新回合
+            startTurn();
+        }
+        
+        // 更新当前玩家指示器
+        function updateCurrentPlayerIndicator() {
+            const currentPlayerName = gameData.currentPlayer === 'player1' ? '玩家1' : (gameData.mode === 'ai' ? 'AI' : '玩家2');
+            currentPlayerIndicator.textContent = `当前回合: ${currentPlayerName}`;
+        }
+        
+        // 重新开始游戏
+        function restartGame() {
+            // 重置游戏数据
+            gameData.players.player1 = { 
+                characters: [], 
+                characterInstances: [],
+                hand: [], 
+                deck: [], 
+                discard: [],
+                defense: [0, 0],
+                firstAttack: true,
+                teamEffects: []
+            };
+            
+            gameData.players.player2 = { 
+                characters: [], 
+                characterInstances: [],
+                hand: [], 
+                deck: [], 
+                discard: [],
+                defense: [0, 0],
+                firstAttack: true,
+                teamEffects: []
+            };
+            
+            gameData.currentPlayer = null;
+            gameData.selectedCharacter = null;
+            gameData.selectedCard = null;
+            gameData.usedAttackThisTurn = false;
+            
+            // 重置角色血量为各自的最大血量
+            for (const char in gameData.characters) {
+                gameData.characters[char].health = gameData.characters[char].maxHealth;
+            }
+            
+            // 清除选择状态和死亡状态
+            const selectedCards = document.querySelectorAll('.character-card.selected');
+            selectedCards.forEach(card => {
+                card.classList.remove('selected');
+            });
+            
+            const deadSlots = document.querySelectorAll('.character-slot.dead');
+            deadSlots.forEach(slot => {
+                slot.classList.remove('dead');
+            });
+            
+            // 切换回模式选择界面
+            gameBoard.style.display = 'none';
+            modeSelection.style.display = 'block';
+            gameData.gamePhase = 'modeSelection';
+            
+            // 清空日志
+            gameLog.innerHTML = '';
+            addLog('游戏开始！请选择模式。');
+        }
+        
+        // 添加游戏日志
+        function addLog(message) {
+            if (gameLog) {
+                const logEntry = document.createElement('div');
+                logEntry.className = 'log-entry';
+                logEntry.textContent = message;
+                gameLog.appendChild(logEntry);
+                gameLog.scrollTop = gameLog.scrollHeight;
+            } else {
+                console.log('游戏日志:', message);
+            }
+        }
+        
+        // 初始化游戏
+        initGame();
+    </script>
+</body>
+</html>
