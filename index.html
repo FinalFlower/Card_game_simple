@@ -370,9 +370,7 @@
         }
     </style>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- YAML 解析库 -->
-    <script src="https://cdn.jsdelivr.net/npm/js-yaml@4.1.0/dist/js-yaml.min.js"></script>
-    <!-- 游戏配置文件 - 作为YAML的备用方案 -->
+    <!-- 游戏配置文件 -->
     <script src="game-config.js"></script>
 </head>
 <body>
@@ -541,7 +539,7 @@
         <div><strong>调试信息</strong></div>
         <div>角色数量: <span id="char-count">0</span></div>
         <div>卡牌类型: <span id="card-count">0</span></div>
-        <div>YAML加载状态: <span id="yaml-status">未加载</span></div>
+        <div>配置来源: <span id="yaml-status">未加载</span></div>
     </div>
 
     <script>
@@ -669,7 +667,7 @@
                 quantity: 10
             },
             defend: {
-                name: "defend",
+                name: "defense",
                 display_name: "防御",
                 description: "下一次受到伤害减少1点",
                 target_type: "ally",
@@ -703,118 +701,43 @@
             }
         };
         
-        // YAML 数据存储
+        // YAML 数据存储（保留用于兼容性）
         let yamlCharacters = {};
         let yamlActionCards = {};
         let yamlTeamEffects = {};
         
-        // 加载 YAML 文件的函数
-        async function loadYAMLFile(url) {
-            try {
-                const response = await fetch(url);
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                const yamlText = await response.text();
-                return jsyaml.load(yamlText);
-            } catch (error) {
-                console.error(`Error loading YAML file ${url}:`, error);
-                return null;
-            }
-        }
-        
-        // 加载所有配置文件
-        async function loadGameConfig() {
+        // 简化的配置加载函数 - 只使用JavaScript配置
+        function loadGameConfig() {
             const loadingIndicator = document.getElementById('loading-indicator');
             const modeOptions = document.getElementById('mode-options');
             
-            try {
-                console.log('开始加载配置文件...');
-                
-                // 尝试加载YAML文件，如果失败则使用内嵌配置
-                let charactersLoaded = false;
-                let actionCardsLoaded = false;
-                
-                try {
-                    // 加载角色配置
-                    const charactersData = await loadYAMLFile('characters.yaml');
-                    if (charactersData && charactersData.characters) {
-                        yamlCharacters = charactersData.characters;
-                        yamlTeamEffects = charactersData.team_effects || embeddedTeamEffects;
-                        charactersLoaded = true;
-                        console.log('YAML角色配置加载成功:', yamlCharacters);
-                    }
-                } catch (error) {
-                    console.warn('YAML角色配置加载失败，使用内嵌配置:', error);
-                }
-                
-                if (!charactersLoaded) {
-                    // 尝试使用外部JavaScript配置文件
-                    if (window.GameConfig && window.GameConfig.characters) {
-                        yamlCharacters = window.GameConfig.characters;
-                        yamlTeamEffects = window.GameConfig.team_effects || embeddedTeamEffects;
-                        console.log('使用外部JS配置文件中的角色配置');
-                    } else {
-                        yamlCharacters = embeddedCharacters;
-                        yamlTeamEffects = embeddedTeamEffects;
-                        console.log('使用内嵌角色配置');
-                    }
-                }
-                
-                try {
-                    // 加载行动卡配置
-                    const actionCardsData = await loadYAMLFile('action_cards.yaml');
-                    if (actionCardsData && actionCardsData.action_cards) {
-                        yamlActionCards = actionCardsData.action_cards;
-                        actionCardsLoaded = true;
-                        console.log('YAML行动卡配置加载成功:', yamlActionCards);
-                    }
-                } catch (error) {
-                    console.warn('YAML行动卡配置加载失败，使用内嵌配置:', error);
-                }
-                
-                if (!actionCardsLoaded) {
-                    // 尝试使用外部JavaScript配置文件
-                    if (window.GameConfig && window.GameConfig.action_cards) {
-                        yamlActionCards = window.GameConfig.action_cards;
-                        console.log('使用外部JS配置文件中的行动卡配置');
-                    } else {
-                        yamlActionCards = embeddedActionCards;
-                        console.log('使用内嵌行动卡配置');
-                    }
-                }
-                
-                // 加载完成后更新游戏数据
-                updateGameDataFromYAML();
-                updateCharacterSelectionUI();
-                updateDebugInfo();
-                
-                // 隐藏加载指示器，显示模式选择
-                loadingIndicator.style.display = 'none';
-                modeOptions.style.display = 'flex';
-                
-                const configSource = (charactersLoaded && actionCardsLoaded) ? 'YAML文件' : '内嵌配置';
-                console.log(`配置加载完成，使用${configSource}`);
-                addLog(`游戏配置已加载（${configSource}）`);
-                
-            } catch (error) {
-                console.error('配置文件加载出错，使用内嵌配置:', error);
-                
-                // 使用内嵌配置作为最后的备用方案
-                if (window.GameConfig) {
-                    yamlCharacters = window.GameConfig.characters || embeddedCharacters;
-                    yamlActionCards = window.GameConfig.action_cards || embeddedActionCards;
-                    yamlTeamEffects = window.GameConfig.team_effects || embeddedTeamEffects;
-                    console.log('使用外部JS配置作为备用方案');
-                    addLog('游戏配置已加载（JS配置文件）');
-                } else {
-                    yamlCharacters = embeddedCharacters;
-                    yamlActionCards = embeddedActionCards;
-                    yamlTeamEffects = embeddedTeamEffects;
-                    console.log('使用内嵌配置作为最终备用方案');
-                    addLog('游戏配置已加载（内嵌备用配置）');
-                }
+            console.log('开始加载配置文件...');
+            
+            // 使用JavaScript配置文件或内嵌配置
+            if (window.GameConfig && window.GameConfig.characters && window.GameConfig.action_cards) {
+                yamlCharacters = window.GameConfig.characters;
+                yamlActionCards = window.GameConfig.action_cards;
+                yamlTeamEffects = window.GameConfig.team_effects || {};
+                console.log('使用外部JS配置文件');
+                addLog('游戏配置已加载（JS配置文件）');
+            } else {
+                yamlCharacters = embeddedCharacters;
+                yamlActionCards = embeddedActionCards;
+                yamlTeamEffects = embeddedTeamEffects;
+                console.log('使用内嵌备用配置');
+                addLog('游戏配置已加载（内嵌备用配置）');
             }
+            
+            // 更新游戏数据
+            updateGameDataFromYAML();
+            updateCharacterSelectionUI();
+            updateDebugInfo();
+            
+            // 显示模式选择
+            loadingIndicator.style.display = 'none';
+            modeOptions.style.display = 'flex';
+            
+            console.log('配置加载完成');
         }
         
         // 根据 YAML 数据更新游戏数据
@@ -909,8 +832,8 @@
                 cardCount.textContent = gameData.actionCards.length;
                 
                 // 检测配置来源
-                const isYamlLoaded = (yamlCharacters !== embeddedCharacters) || (yamlActionCards !== embeddedActionCards);
-                yamlStatus.textContent = isYamlLoaded ? 'YAML文件' : '内嵌配置';
+                const isExternalConfig = window.GameConfig && window.GameConfig.characters;
+                yamlStatus.textContent = isExternalConfig ? 'JS配置文件' : '内嵌配置';
                 
                 // 在开发模式下或localhost环境显示调试信息  
                 if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.search.includes('debug=1')) {
@@ -974,20 +897,14 @@
         // 初始化游戏
         function initGame() {
             // 首先加载配置文件
-            loadGameConfig().then(() => {
-                console.log('配置加载完成，初始化游戏界面');
-                console.log('当前角色数据:', gameData.characters);
-                console.log('当前卡牌数据:', gameData.actionCards);
-                
-                // 添加模式选择事件监听
-                pvpModeBtn.addEventListener('click', () => selectMode('pvp'));
-                aiModeBtn.addEventListener('click', () => selectMode('ai'));
-            }).catch(error => {
-                console.error('配置加载失败:', error);
-                // 即使失败也要添加事件监听，使用默认配置
-                pvpModeBtn.addEventListener('click', () => selectMode('pvp'));
-                aiModeBtn.addEventListener('click', () => selectMode('ai'));
-            });
+            loadGameConfig();
+            console.log('配置加载完成，初始化游戏界面');
+            console.log('当前角色数据:', gameData.characters);
+            console.log('当前卡牌数据:', gameData.actionCards);
+            
+            // 添加模式选择事件监听
+            pvpModeBtn.addEventListener('click', () => selectMode('pvp'));
+            aiModeBtn.addEventListener('click', () => selectMode('ai'));
             
             // 返回按钮事件
             backToModeBtn.addEventListener('click', backToModeSelection);
@@ -1654,6 +1571,7 @@
                     // 防御
                     gameData.players[targetPlayer].defense[targetCharIndex]++;
                     addLog("获得1点防御，下一次受到的伤害减少1点！");
+                    console.log(`防御值更新: 玩家${targetPlayer} 角色${targetCharIndex} 防御值: ${gameData.players[targetPlayer].defense[targetCharIndex]}`);
                     break;
             }
             
@@ -1708,10 +1626,13 @@
                         defenseIndicator = document.createElement('div');
                         defenseIndicator.className = 'defense-indicator';
                         player1Slots[i].appendChild(defenseIndicator);
+                        console.log(`创建玩家1角色${i}的防御指示器`);
                     }
                     defenseIndicator.textContent = gameData.players.player1.defense[i];
+                    console.log(`玩家1角色${i}防御值显示: ${gameData.players.player1.defense[i]}`);
                 } else if (defenseIndicator) {
                     defenseIndicator.remove();
+                    console.log(`移除玩家1角色${i}的防御指示器`);
                 }
                 
                 // 更新头像
@@ -1751,10 +1672,13 @@
                         defenseIndicator = document.createElement('div');
                         defenseIndicator.className = 'defense-indicator';
                         player2Slots[i].appendChild(defenseIndicator);
+                        console.log(`创建玩家2角色${i}的防御指示器`);
                     }
                     defenseIndicator.textContent = gameData.players.player2.defense[i];
+                    console.log(`玩家2角色${i}防御值显示: ${gameData.players.player2.defense[i]}`);
                 } else if (defenseIndicator) {
                     defenseIndicator.remove();
+                    console.log(`移除玩家2角色${i}的防御指示器`);
                 }
                 
                 // 更新头像

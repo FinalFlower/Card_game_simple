@@ -71,7 +71,84 @@
 
 ## 🚀 如何开始
 
-### 运行游戏
+# 简化部署指南
+
+## 文件说明
+
+游戏现在使用简化的配置系统，只需要以下文件：
+
+### 必需文件
+- `index.html` - 主游戏文件
+- `game-config.js` - 游戏配置文件（角色、卡牌、队伍效果）
+
+### 可选文件  
+- `default.png` - 默认角色头像（如果不存在会显示默认样式）
+
+## 部署步骤
+
+### 标准部署
+上传以下文件到你的虚拟主机：
+```
+index.html
+game-config.js
+default.png (可选)
+```
+
+### 最小部署
+如果JavaScript文件加载有问题，只需上传：
+```
+index.html
+```
+游戏将使用内嵌的默认配置运行。
+
+## 自定义配置
+
+### 修改角色和卡牌
+编辑 `game-config.js` 文件：
+- `characters` - 角色配置
+- `action_cards` - 行动卡配置  
+- `team_effects` - 队伍效果配置
+
+### 配置格式示例
+```javascript
+window.GameConfig = {
+    characters: {
+        new_character: {
+            name: "new_character",
+            display_name: "新角色",
+            max_hp: 20,
+            description: "角色描述",
+            avatar: "new_character.png",
+            skills: [...]
+        }
+    },
+    // ...
+};
+```
+
+## 调试方法
+
+1. **查看调试信息**：在URL后添加 `?debug=1`
+2. **检查浏览器控制台**：按F12查看配置加载信息
+3. **配置来源**：右下角调试面板显示当前使用的配置来源
+
+## 常见问题
+
+**Q: 游戏无法加载怎么办？**
+A: 游戏设计为自带备用配置，即使game-config.js加载失败也能正常运行。
+
+**Q: 如何添加新角色？**
+A: 在game-config.js的characters对象中添加新角色数据。
+
+**Q: 防御卡为什么显示不正常？**
+A: 确保在action_cards中防御卡的name字段为"defense"而不是"defend"。
+
+## 技术说明
+
+- 游戏优先加载外部JavaScript配置文件
+- 如果外部配置不可用，自动回退到内嵌默认配置
+- 不再依赖YAML文件，提高兼容性
+
 
 
 ### 游戏流程

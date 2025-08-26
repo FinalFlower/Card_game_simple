@@ -125,7 +125,7 @@ window.GameConfig = {
             quantity: 10
         },
         defend: {
-            name: "defend",
+            name: "defense",
             display_name: "防御",
             description: "下一次受到伤害减少1点",
             target_type: "ally",
