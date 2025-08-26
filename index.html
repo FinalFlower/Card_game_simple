@@ -368,6 +368,16 @@
             margin: 10px 0;
             color: #3498db;
         }
+
+        .error-message {
+            text-align: center;
+            color: #e74c3c;
+            font-size: 18px;
+            padding: 20px;
+            background: rgba(231, 76, 60, 0.1);
+            border-radius: 10px;
+            margin: 20px 0;
+        }
     </style>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- 游戏配置文件 -->
@@ -383,6 +393,9 @@
             <div id="loading-indicator" style="display: block; text-align: center; margin: 20px 0;">
                 <i class="fas fa-spinner fa-spin" style="font-size: 24px; margin-right: 10px;"></i>
                 <span>正在加载游戏配置...</span>
+            </div>
+            <div id="error-message" class="error-message" style="display: none;">
+                配置文件加载失败！请确保 game-config.js 文件存在且格式正确。
             </div>
             <div class="mode-options" id="mode-options" style="display: none;">
                 <div class="mode-btn" id="pvp-mode">
@@ -403,54 +416,18 @@
             <h2 id="selection-title">选择角色</h2>
             <div class="selection-area">
                 <div class="player-selection" id="player1-selection">
-                    <h2>玩家1选择角色</h2>
+                    <h3>玩家1</h3>
+                    <p>请选择两个角色</p>
                     <div class="character-cards">
-                        <div class="character-card" data-character="cafe">
-                            <h3>Cafe</h3>
-                            <p>每回合第一次造成伤害时伤害+1</p>
-                        </div>
-                        <div class="character-card" data-character="星河">
-                            <h3>星河</h3>
-                            <p>每回合不使用技能时抽取一张行动卡</p>
-                        </div>
-                        <div class="character-card" data-character="阳光">
-                            <h3>阳光</h3>
-                            <p>对方回合未使用攻击，下回合额外抽2张卡</p>
-                        </div>
-                        <div class="character-card" data-character="琉璃">
-                            <h3>琉璃</h3>
-                            <p>受到攻击时有几率免疫并反击</p>
-                        </div>
-                        <div class="character-card" data-character="俊">
-                            <h3>俊</h3>
-                            <p>帮助队友承受伤害，前两次伤害减少1点</p>
-                        </div>
+                        <!-- 角色卡片将由JavaScript动态生成 -->
                     </div>
                 </div>
                 
                 <div class="player-selection" id="player2-selection">
-                    <h2 id="player2-title">玩家2选择角色</h2>
+                    <h3 id="player2-title">玩家2</h3>
+                    <p>请选择两个角色</p>
                     <div class="character-cards">
-                        <div class="character-card" data-character="cafe">
-                            <h3>Cafe</h3>
-                            <p>每回合第一次造成伤害时伤害+1</p>
-                        </div>
-                        <div class="character-card" data-character="星河">
-                            <h3>星河</h3>
-                            <p>每回合不使用技能时抽取一张行动卡</p>
-                        </div>
-                        <div class="character-card" data-character="阳光">
-                            <h3>阳光</h3>
-                            <p>对方回合未使用攻击，下回合额外抽2张卡</p>
-                        </div>
-                        <div class="character-card" data-character="琉璃">
-                            <h3>琉璃</h3>
-                            <p>受到攻击时有几率免疫并反击</p>
-                        </div>
-                        <div class="character-card" data-character="俊">
-                            <h3>俊</h3>
-                            <p>帮助队友承受伤害，前两次伤害减少1点</p>
-                        </div>
+                        <!-- 角色卡片将由JavaScript动态生成 -->
                     </div>
                 </div>
             </div>
@@ -475,15 +452,17 @@
                 <div class="player-area" id="player1-area">
                     <h2 class="player-title">玩家1</h2>
                     <div class="character-slots">
-                        <div class="character-slot" data-character="cafe" data-index="0">
-                            <h3>Cafe</h3>
+                        <div class="character-slot" data-index="0">
+                            <div class="avatar" style="background-image: url('default.png')"></div>
+                            <h3>角色1</h3>
                             <div class="health-bar">
                                 <div class="health-fill" style="width: 100%;"></div>
                             </div>
                             <p>生命值: <span class="health-value">15</span>/15</p>
                         </div>
-                        <div class="character-slot" data-character="星河" data-index="1">
-                            <h3>星河</h3>
+                        <div class="character-slot" data-index="1">
+                            <div class="avatar" style="background-image: url('default.png')"></div>
+                            <h3>角色2</h3>
                             <div class="health-bar">
                                 <div class="health-fill" style="width: 100%;"></div>
                             </div>
@@ -500,15 +479,17 @@
                 <div class="player-area" id="player2-area">
                     <h2 class="player-title" id="player2-name">玩家2</h2>
                     <div class="character-slots">
-                        <div class="character-slot" data-character="阳光" data-index="0">
-                            <h3>阳光</h3>
+                        <div class="character-slot" data-index="0">
+                            <div class="avatar" style="background-image: url('default.png')"></div>
+                            <h3>角色1</h3>
                             <div class="health-bar">
                                 <div class="health-fill" style="width: 100%;"></div>
                             </div>
                             <p>生命值: <span class="health-value">15</span>/15</p>
                         </div>
-                        <div class="character-slot" data-character="琉璃" data-index="1">
-                            <h3>琉璃</h3>
+                        <div class="character-slot" data-index="1">
+                            <div class="avatar" style="background-image: url('default.png')"></div>
+                            <h3>角色2</h3>
                             <div class="health-bar">
                                 <div class="health-fill" style="width: 100%;"></div>
                             </div>
@@ -543,252 +524,81 @@
     </div>
 
     <script>
-        // 内嵌配置数据 - 兼容虚拟主机
-        const embeddedCharacters = {
-            cafe: {
-                name: "Cafe",
-                display_name: "Cafe",
-                max_hp: 15,
-                description: "每回合第一次造成伤害时伤害加1",
-                avatar: "default.png",
-                skills: [
-                    {
-                        name: "首击强化",
-                        type: "passive",
-                        trigger: "first_damage_dealt",
-                        effect: "damage_bonus",
-                        value: 1,
-                        description: "每回合第一次造成伤害时伤害+1"
-                    }
-                ]
-            },
-            xinhe: {
-                name: "xinhe",
-                display_name: "星河",
-                max_hp: 15,
-                description: "每回合不使用技能时抽取一个行动卡",
-                avatar: "default.png",
-                skills: [
-                    {
-                        name: "静谧抽卡",
-                        type: "passive",
-                        trigger: "turn_end_no_skill",
-                        effect: "draw_card",
-                        value: 1,
-                        description: "每回合不使用技能时抽取1张行动卡"
-                    }
-                ]
-            },
-            yangguang: {
-                name: "yangguang",
-                display_name: "阳光",
-                max_hp: 15,
-                description: "对方回合没有使用攻击卡时，下回合额外抽取2张卡",
-                avatar: "default.png",
-                skills: [
-                    {
-                        name: "和平奖励",
-                        type: "passive",
-                        trigger: "opponent_no_attack",
-                        effect: "draw_card",
-                        value: 2,
-                        description: "对方上回合未使用攻击卡时，本回合额外抽取2张卡"
-                    }
-                ]
-            },
-            liuli: {
-                name: "liuli",
-                display_name: "琉璃",
-                max_hp: 15,
-                description: "受到攻击时进行1-6随机判定，6时免疫并反击2点",
-                avatar: "default.png",
-                skills: [
-                    {
-                        name: "幸运反击",
-                        type: "passive",
-                        trigger: "take_damage",
-                        effect: "lucky_counter",
-                        value: {
-                            dice_range: [1, 6],
-                            lucky_number: 6,
-                            counter_damage: 2
-                        },
-                        description: "受到攻击时1-6随机判定，6时免疫攻击并反击2点伤害"
-                    }
-                ]
-            },
-            jun: {
-                name: "jun",
-                display_name: "俊",
-                max_hp: 15,
-                description: "可以帮队友承受伤害（每回合一次），前两次伤害减1",
-                avatar: "default.png",
-                skills: [
-                    {
-                        name: "护盾守护",
-                        type: "passive",
-                        trigger: "teammate_take_damage",
-                        effect: "damage_redirect",
-                        value: 1,
-                        description: "可以代替队友承受伤害，每回合限一次"
-                    },
-                    {
-                        name: "坚韧减伤",
-                        type: "passive",
-                        trigger: "take_damage",
-                        effect: "damage_reduction",
-                        value: {
-                            max_times: 2,
-                            reduction: 1
-                        },
-                        description: "每回合前两次受到的伤害减少1点"
-                    }
-                ]
-            }
-        };
-
-        const embeddedActionCards = {
-            attack: {
-                name: "attack",
-                display_name: "攻击",
-                description: "减少对方3点生命值",
-                target_type: "enemy",
-                effect_type: "damage",
-                base_value: 3,
-                quantity: 10
-            },
-            heal: {
-                name: "heal",
-                display_name: "回血",
-                description: "增加自身2点生命值",
-                target_type: "ally",
-                effect_type: "heal",
-                base_value: 2,
-                quantity: 10
-            },
-            defend: {
-                name: "defense",
-                display_name: "防御",
-                description: "下一次受到伤害减少1点",
-                target_type: "ally",
-                effect_type: "defense",
-                base_value: 1,
-                quantity: 10
-            }
-        };
-
-        const embeddedTeamEffects = {
-            jun_liuli: {
-                name: "俊琉璃组合",
-                characters: ["jun", "liuli"],
-                effect: "first_attack_bonus",
-                value: 1,
-                description: "每回合第一次攻击伤害+1"
-            },
-            cafe_xinhe: {
-                name: "Cafe星河组合",
-                characters: ["cafe", "xinhe"],
-                effect: "extra_draw",
-                value: 2,
-                description: "每回合额外抽取2张卡"
-            },
-            yangguang_liuli: {
-                name: "阳光琉璃组合",
-                characters: ["yangguang", "liuli"],
-                effect: "first_damage_immunity",
-                value: 1,
-                description: "免除每回合第一次受到的伤害"
-            }
-        };
         
-        // YAML 数据存储（保留用于兼容性）
-        let yamlCharacters = {};
-        let yamlActionCards = {};
-        let yamlTeamEffects = {};
-        
-        // 简化的配置加载函数 - 只使用JavaScript配置
+        // 配置加载函数 - 只从JavaScript配置文件加载
         function loadGameConfig() {
-            const loadingIndicator = document.getElementById('loading-indicator');
-            const modeOptions = document.getElementById('mode-options');
-            
             console.log('开始加载配置文件...');
+            console.log('检查 window.GameConfig:', window.GameConfig);
             
-            // 使用JavaScript配置文件或内嵌配置
-            if (window.GameConfig && window.GameConfig.characters && window.GameConfig.action_cards) {
-                yamlCharacters = window.GameConfig.characters;
-                yamlActionCards = window.GameConfig.action_cards;
-                yamlTeamEffects = window.GameConfig.team_effects || {};
-                console.log('使用外部JS配置文件');
-                addLog('游戏配置已加载（JS配置文件）');
-            } else {
-                yamlCharacters = embeddedCharacters;
-                yamlActionCards = embeddedActionCards;
-                yamlTeamEffects = embeddedTeamEffects;
-                console.log('使用内嵌备用配置');
-                addLog('游戏配置已加载（内嵌备用配置）');
+            // 检查外部配置文件是否存在
+            if (!window.GameConfig) {
+                console.error('配置文件未找到！');
+                showError('配置文件 game-config.js 未找到或未正确加载！');
+                return false;
             }
-            
-            // 更新游戏数据
-            updateGameDataFromYAML();
-            updateCharacterSelectionUI();
-            updateDebugInfo();
-            
-            // 显示模式选择
-            loadingIndicator.style.display = 'none';
-            modeOptions.style.display = 'flex';
-            
-            console.log('配置加载完成');
-        }
-        
-        // 根据 YAML 数据更新游戏数据
-        function updateGameDataFromYAML() {
-            // 更新角色数据
-            if (Object.keys(yamlCharacters).length > 0) {
-                gameData.characters = {};
-                for (const [key, char] of Object.entries(yamlCharacters)) {
-                    // 为了兼容性，使用 display_name 作为 key，如果没有则使用原 key
-                    let characterKey = key;
-                    
-                    // 创建映射关系来保持兼容性
-                    if (key === 'xinhe') characterKey = '星河';
-                    else if (key === 'yangguang') characterKey = '阳光';
-                    else if (key === 'liuli') characterKey = '琉璃';
-                    else if (key === 'jun') characterKey = '俊';
-                    
-                    gameData.characters[characterKey] = {
-                        name: char.display_name || char.name,
-                        health: char.max_hp || 15,
-                        maxHealth: char.max_hp || 15,
-                        skill: char.description || "",
-                        skills: char.skills || [],
-                        originalKey: key, // 保存原始key用于其他地方
-                        avatar: char.avatar || 'default.png' // 头像URL，默认使用default.png
-                    };
-                }
+
+            console.log('GameConfig.characters:', window.GameConfig.characters);
+            console.log('GameConfig.action_cards:', window.GameConfig.action_cards);
+
+            // 验证配置文件格式
+            if (!window.GameConfig.characters || !window.GameConfig.action_cards) {
+                console.error('配置文件格式不正确！');
+                showError('配置文件格式不正确！缺少必要的 characters 或 action_cards 配置。');
+                return false;
             }
-            
-            // 从characters.yaml加载队伍效果
-            if (yamlTeamEffects && Object.keys(yamlTeamEffects).length > 0) {
-                gameData.teamEffects = yamlTeamEffects;
-            } else {
-                gameData.teamEffects = {};
-            }
-            
-            // 更新行动卡数据
-            if (Object.keys(yamlActionCards).length > 0) {
+
+            try {
+                console.log('开始解析配置数据...');
+                
+                // 加载角色数据
+                gameData.characters = window.GameConfig.characters;
+                console.log('角色数据加载完成:', Object.keys(gameData.characters));
+                
+                // 加载行动卡数据，转换为数组格式
                 gameData.actionCards = [];
-                for (const [key, card] of Object.entries(yamlActionCards)) {
-                    gameData.actionCards.push({
-                        type: card.name,
-                        name: card.display_name,
-                        effect: card.description,
-                        count: card.quantity || 10,
-                        target_type: card.target_type,
-                        effect_type: card.effect_type,
-                        base_value: card.base_value
-                    });
-                }
+                Object.entries(window.GameConfig.action_cards).forEach(([key, card]) => {
+                    for (let i = 0; i < (card.quantity || 1); i++) {
+                        gameData.actionCards.push({
+                            name: card.display_name || card.name,
+                            type: card.name,
+                            description: card.description,
+                            targetType: card.target_type,
+                            effectType: card.effect_type,
+                            baseValue: card.base_value
+                        });
+                    }
+                });
+                console.log('行动卡数据加载完成:', gameData.actionCards.length, '张卡');
+                
+                // 加载队伍效果数据
+                gameData.teamEffects = window.GameConfig.team_effects || {};
+                console.log('队伍效果数据加载完成:', Object.keys(gameData.teamEffects));
+                
+                console.log('开始更新角色选择界面...');
+                // 更新界面
+                updateCharacterSelectionUI();
+                console.log('角色选择界面更新完成');
+                
+                console.log('显示模式选择界面...');
+                // 显示模式选择
+                loadingIndicator.style.display = 'none';
+                modeOptions.style.display = 'flex';
+                
+                console.log('游戏配置已加载（从 game-config.js）');
+                return true;
+                
+            } catch (error) {
+                console.error('配置文件解析错误:', error);
+                showError('配置文件解析失败：' + error.message);
+                return false;
             }
+        }
+
+        // 显示错误信息
+        function showError(message) {
+            loadingIndicator.style.display = 'none';
+            errorMessage.textContent = message;
+            errorMessage.style.display = 'block';
         }
         
         // 更新角色选择界面
@@ -796,21 +606,21 @@
             const characterCardContainers = document.querySelectorAll('.character-cards');
             
             characterCardContainers.forEach(container => {
-                // 清空现有卡片
                 container.innerHTML = '';
                 
-                // 根据 YAML 数据创建角色卡片
-                for (const [key, char] of Object.entries(gameData.characters)) {
-                    const cardDiv = document.createElement('div');
-                    cardDiv.className = 'character-card';
-                    cardDiv.setAttribute('data-character', key);
-                    cardDiv.innerHTML = `
-                        <div class="avatar" style="background-image: url('${char.avatar}')"></div>
-                        <h3>${char.name}</h3>
-                        <p>${char.skill}</p>
+                Object.entries(gameData.characters).forEach(([key, character]) => {
+                    const card = document.createElement('div');
+                    card.className = 'character-card';
+                    card.setAttribute('data-character', key);
+                    
+                    card.innerHTML = `
+                        <div class="avatar" style="background-image: url('${character.avatar || 'default.png'}')"></div>
+                        <h3>${character.display_name || character.name}</h3>
+                        <p>${character.description}</p>
                     `;
-                    container.appendChild(cardDiv);
-                }
+                    
+                    container.appendChild(card);
+                });
             });
             
             // 重新添加事件监听器
@@ -818,28 +628,6 @@
             characterCards.forEach(card => {
                 card.addEventListener('click', handleCharacterSelection);
             });
-        }
-        
-        // 更新调试信息
-        function updateDebugInfo() {
-            const debugInfo = document.getElementById('debug-info');
-            const charCount = document.getElementById('char-count');
-            const cardCount = document.getElementById('card-count');
-            const yamlStatus = document.getElementById('yaml-status');
-            
-            if (debugInfo && charCount && cardCount && yamlStatus) {
-                charCount.textContent = Object.keys(gameData.characters).length;
-                cardCount.textContent = gameData.actionCards.length;
-                
-                // 检测配置来源
-                const isExternalConfig = window.GameConfig && window.GameConfig.characters;
-                yamlStatus.textContent = isExternalConfig ? 'JS配置文件' : '内嵌配置';
-                
-                // 在开发模式下或localhost环境显示调试信息  
-                if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.search.includes('debug=1')) {
-                    debugInfo.style.display = 'block';
-                }
-            }
         }
         
         // 游戏数据
@@ -881,6 +669,9 @@
         const modeSelection = document.getElementById('mode-selection');
         const characterSelection = document.getElementById('character-selection');
         const gameBoard = document.getElementById('game-board');
+        const loadingIndicator = document.getElementById('loading-indicator');
+        const errorMessage = document.getElementById('error-message');
+        const modeOptions = document.getElementById('mode-options');
         const pvpModeBtn = document.getElementById('pvp-mode');
         const aiModeBtn = document.getElementById('ai-mode');
         const confirmSelectionBtn = document.getElementById('confirm-selection');
@@ -896,11 +687,12 @@
         
         // 初始化游戏
         function initGame() {
-            // 首先加载配置文件
-            loadGameConfig();
-            console.log('配置加载完成，初始化游戏界面');
-            console.log('当前角色数据:', gameData.characters);
-            console.log('当前卡牌数据:', gameData.actionCards);
+            console.log('初始化游戏...');
+            
+            // 加载配置文件
+            if (!loadGameConfig()) {
+                return; // 配置加载失败，停止初始化
+            }
             
             // 添加模式选择事件监听
             pvpModeBtn.addEventListener('click', () => selectMode('pvp'));
@@ -937,27 +729,30 @@
                 
                 // AI模式下，AI自动选择角色
                 setTimeout(() => {
-                    const aiCharacters = [];
-                    const availableChars = Object.keys(gameData.characters);
+                    const characterKeys = Object.keys(gameData.characters);
+                    const aiSelection = [];
                     
-                    // 随机选择两个不重复的角色
-                    while (aiCharacters.length < 2) {
-                        const randomIndex = Math.floor(Math.random() * availableChars.length);
-                        const selectedChar = availableChars[randomIndex];
-                        
-                        if (!aiCharacters.includes(selectedChar)) {
-                            aiCharacters.push(selectedChar);
-                            
-                            // 更新UI显示AI的选择
-                            const aiCharElement = document.querySelector(`#player2-selection .character-card[data-character="${selectedChar}"]`);
-                            if (aiCharElement) {
-                                aiCharElement.classList.add('selected');
-                            }
+                    // 随机选择两个不同的角色
+                    while (aiSelection.length < 2) {
+                        const randomIndex = Math.floor(Math.random() * characterKeys.length);
+                        const randomChar = characterKeys[randomIndex];
+                        if (!aiSelection.includes(randomChar)) {
+                            aiSelection.push(randomChar);
                         }
                     }
                     
-                    gameData.players.player2.characters = aiCharacters;
-                    addLog(`AI选择了角色: ${aiCharacters.map(char => gameData.characters[char].name).join('、')}`);
+                    gameData.players.player2.characters = aiSelection;
+                    
+                    // 更新AI选择显示
+                    const aiCards = document.querySelectorAll('#player2-selection .character-card');
+                    aiCards.forEach(card => {
+                        const charKey = card.getAttribute('data-character');
+                        if (aiSelection.includes(charKey)) {
+                            card.classList.add('selected');
+                        }
+                    });
+                    
+                    addLog('AI已自动选择角色');
                 }, 1000);
             } else {
                 player2Title.textContent = '玩家2选择角色';
@@ -1078,12 +873,12 @@
                 
                 // 创建独立的角色实例
                 const charInstance = {
-                    name: charTemplate.name,
-                    health: charTemplate.maxHealth,
-                    maxHealth: charTemplate.maxHealth,
-                    skill: charTemplate.skill,
+                    name: charTemplate.display_name || charTemplate.name,
+                    health: charTemplate.max_hp || 15,
+                    maxHealth: charTemplate.max_hp || 15,
+                    description: charTemplate.description,
                     skills: charTemplate.skills || [],
-                    originalKey: charTemplate.originalKey || charName,
+                    originalKey: charName,
                     avatar: charTemplate.avatar || 'default.png'
                 };
                 
@@ -1110,12 +905,12 @@
                 
                 // 创建独立的角色实例
                 const charInstance = {
-                    name: charTemplate.name,
-                    health: charTemplate.maxHealth,
-                    maxHealth: charTemplate.maxHealth,
-                    skill: charTemplate.skill,
+                    name: charTemplate.display_name || charTemplate.name,
+                    health: charTemplate.max_hp || 15,
+                    maxHealth: charTemplate.max_hp || 15,
+                    description: charTemplate.description,
                     skills: charTemplate.skills || [],
-                    originalKey: charTemplate.originalKey || charName,
+                    originalKey: charName,
                     avatar: charTemplate.avatar || 'default.png'
                 };
                 
@@ -1194,13 +989,11 @@
         
         // 初始化卡组
         function initDecks() {
-            // 创建行动卡池
-            let actionCardPool = [];
-            gameData.actionCards.forEach(cardType => {
-                for (let i = 0; i < cardType.count; i++) {
-                    actionCardPool.push({...cardType});
-                }
-            });
+            // 行动卡池已经在配置加载时按数量展开了，直接使用
+            let actionCardPool = [...gameData.actionCards];
+            
+            console.log('卡池总数:', actionCardPool.length);
+            console.log('卡池内容:', actionCardPool);
             
             // 洗牌算法
             shuffleArray(actionCardPool);
@@ -1208,7 +1001,10 @@
             // 平分卡池给两个玩家
             const half = Math.ceil(actionCardPool.length / 2);
             gameData.players.player1.deck = actionCardPool.slice(0, half);
-            gameData.players.player2.deck = actionCardPool.slice(half, actionCardPool.length);
+            gameData.players.player2.deck = actionCardPool.slice(half);
+            
+            console.log('玩家1卡组:', gameData.players.player1.deck.length, '张');
+            console.log('玩家2卡组:', gameData.players.player2.deck.length, '张');
         }
         
         // 洗牌算法
@@ -1369,7 +1165,7 @@
                 cardElement.className = `action-card ${card.type}`;
                 cardElement.innerHTML = `
                     <div class="card-name">${card.name}</div>
-                    <div class="card-effect">${card.effect}</div>
+                    <div class="card-effect">${card.description}</div>
                 `;
                 
                 cardElement.addEventListener('click', () => selectCard(index));
@@ -1806,11 +1602,15 @@
         
         // 添加游戏日志
         function addLog(message) {
-            const logEntry = document.createElement('div');
-            logEntry.className = 'log-entry';
-            logEntry.textContent = message;
-            gameLog.appendChild(logEntry);
-            gameLog.scrollTop = gameLog.scrollHeight;
+            if (gameLog) {
+                const logEntry = document.createElement('div');
+                logEntry.className = 'log-entry';
+                logEntry.textContent = message;
+                gameLog.appendChild(logEntry);
+                gameLog.scrollTop = gameLog.scrollHeight;
+            } else {
+                console.log('游戏日志:', message);
+            }
         }
         
         // 初始化游戏
