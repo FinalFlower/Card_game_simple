@@ -308,6 +308,21 @@
             font-size: 12px;
         }
         
+        .character-slot.dead {
+            opacity: 0.5;
+            background: #555;
+        }
+        
+        .character-slot.dead::after {
+            content: "💀";
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 30px;
+            z-index: 10;
+        }
+        
         .defense-indicator {
             position: absolute;
             top: 5px;
@@ -1051,22 +1066,50 @@
                 let targetPlayer, targetCharIndex;
                 
                 if (card.type === 'attack') {
-                    // 攻击卡：选择玩家1的角色
+                    // 攻击卡：选择玩家1的存活角色
                     targetPlayer = 'player1';
-                    targetCharIndex = Math.floor(Math.random() * 2);
+                    const aliveIndices = [];
+                    for (let j = 0; j < 2; j++) {
+                        if (gameData.players.player1.characterInstances[j].health > 0) {
+                            aliveIndices.push(j);
+                        }
+                    }
+                    if (aliveIndices.length > 0) {
+                        targetCharIndex = aliveIndices[Math.floor(Math.random() * aliveIndices.length)];
+                    } else {
+                        continue; // 没有存活的敌方角色，跳过这张攻击卡
+                    }
                 } else if (card.type === 'heal') {
-                    // 治疗卡：选择AI自己的角色
+                    // 治疗卡：选择AI自己的存活角色
                     targetPlayer = 'player2';
                     
-                    // 优先治疗血量低的角色
-                    const char1Health = gameData.players.player2.characterInstances[0].health;
-                    const char2Health = gameData.players.player2.characterInstances[1].health;
+                    // 优先治疗血量低的存活角色
+                    const char1 = gameData.players.player2.characterInstances[0];
+                    const char2 = gameData.players.player2.characterInstances[1];
                     
-                    targetCharIndex = char1Health <= char2Health ? 0 : 1;
+                    if (char1.health > 0 && char2.health > 0) {
+                        targetCharIndex = char1.health <= char2.health ? 0 : 1;
+                    } else if (char1.health > 0) {
+                        targetCharIndex = 0;
+                    } else if (char2.health > 0) {
+                        targetCharIndex = 1;
+                    } else {
+                        continue; // 没有存活的己方角色，跳过这张治疗卡
+                    }
                 } else {
-                    // 防御卡：选择AI自己的角色
+                    // 防御卡：选择AI自己的存活角色
                     targetPlayer = 'player2';
-                    targetCharIndex = Math.floor(Math.random() * 2);
+                    const aliveIndices = [];
+                    for (let j = 0; j < 2; j++) {
+                        if (gameData.players.player2.characterInstances[j].health > 0) {
+                            aliveIndices.push(j);
+                        }
+                    }
+                    if (aliveIndices.length > 0) {
+                        targetCharIndex = aliveIndices[Math.floor(Math.random() * aliveIndices.length)];
+                    } else {
+                        continue; // 没有存活的己方角色，跳过这张防御卡
+                    }
                 }
                 
                 // 使用卡牌
@@ -1149,10 +1192,15 @@
             gameData.selectedCard = cardIndex;
             
             const currentPlayerName = gameData.currentPlayer === 'player1' ? '玩家1' : '玩家2';
-            addLog(`【${currentPlayerName}】选择了卡牌：${gameData.players[gameData.currentPlayer].hand[cardIndex].name}`);
+            const selectedCard = gameData.players[gameData.currentPlayer].hand[cardIndex];
+            addLog(`【${currentPlayerName}】选择了卡牌：${selectedCard.name}`);
             
-            // 提示选择目标
-            addLog("请选择一个角色作为目标");
+            // 根据卡牌类型提示选择目标
+            if (selectedCard.type === 'attack') {
+                addLog("请选择一个敌方存活角色作为攻击目标");
+            } else {
+                addLog("请选择一个己方存活角色作为目标");
+            }
         }
         
         // 处理角色点击
@@ -1169,6 +1217,34 @@
             const playerArea = slot.closest('.player-area');
             const playerId = playerArea.id === 'player1-area' ? 'player1' : 'player2';
             const charIndex = parseInt(slot.getAttribute('data-index'));
+            
+            // 获取选中的卡牌信息
+            const selectedCard = gameData.players[gameData.currentPlayer].hand[gameData.selectedCard];
+            
+            // 检查卡牌使用限制
+            if (selectedCard.type === 'attack') {
+                // 攻击卡只能用于敌方角色
+                if (playerId === gameData.currentPlayer) {
+                    addLog('攻击卡不能用于己方角色！');
+                    return;
+                }
+                // 检查目标角色是否存活
+                if (gameData.players[playerId].characterInstances[charIndex].health <= 0) {
+                    addLog('不能攻击已死亡的角色！');
+                    return;
+                }
+            } else {
+                // 治疗卡和防御卡只能用于己方角色
+                if (playerId !== gameData.currentPlayer) {
+                    addLog('治疗卡和防御卡只能用于己方角色！');
+                    return;
+                }
+                // 检查目标角色是否存活
+                if (gameData.players[playerId].characterInstances[charIndex].health <= 0) {
+                    addLog('不能对已死亡的角色使用卡牌！');
+                    return;
+                }
+            }
             
             // 使用卡牌
             useCard(gameData.selectedCard, playerId, charIndex);
@@ -1223,13 +1299,29 @@
                         if (rand === 6) {
                             addLog("【琉璃】技能触发：免疫攻击并反击！");
                             
-                            // 反击
+                            // 反击 - 随机选择一个存活的敌方角色
                             const attackerPlayer = gameData.currentPlayer;
-                            const attackerCharIndex = 0; // 默认攻击第一个角色
-                            const attackerChar = gameData.players[attackerPlayer].characterInstances[attackerCharIndex];
+                            const aliveAttackerIndices = [];
+                            for (let k = 0; k < 2; k++) {
+                                if (gameData.players[attackerPlayer].characterInstances[k].health > 0) {
+                                    aliveAttackerIndices.push(k);
+                                }
+                            }
                             
-                            attackerChar.health -= 2;
-                            addLog(`【琉璃】反击对【${attackerChar.name}】造成2点伤害！`);
+                            if (aliveAttackerIndices.length > 0) {
+                                const attackerCharIndex = aliveAttackerIndices[Math.floor(Math.random() * aliveAttackerIndices.length)];
+                                const attackerChar = gameData.players[attackerPlayer].characterInstances[attackerCharIndex];
+                                
+                                attackerChar.health -= 2;
+                                if (attackerChar.health < 0) attackerChar.health = 0;
+                                
+                                addLog(`【琉璃】反击对【${attackerChar.name}】造成2点伤害！`);
+                                
+                                // 检查反击是否击倒目标
+                                if (attackerChar.health === 0) {
+                                    addLog(`【${attackerChar.name}】被琉璃的反击击倒了！`);
+                                }
+                            };
                             
                             // 更新角色显示
                             updateCharacterDisplays();
@@ -1262,6 +1354,11 @@
                     if (targetChar.health < 0) targetChar.health = 0;
                     
                     addLog(`造成${damage}点伤害！`);
+                    
+                    // 检查角色是否死亡
+                    if (targetChar.health === 0) {
+                        addLog(`【${targetChar.name}】被击倒了！`);
+                    }
                     
                     // 标记本回合使用了攻击（用于阳光技能）
                     gameData.usedAttackThisTurn = true;
@@ -1316,9 +1413,18 @@
                 const healthFill = player1Slots[i].querySelector('.health-fill');
                 healthFill.style.width = (char.health / char.maxHealth * 100) + '%';
                 
+                // 设置死亡状态
+                if (char.health <= 0) {
+                    player1Slots[i].classList.add('dead');
+                    healthFill.style.background = '#888';
+                } else {
+                    player1Slots[i].classList.remove('dead');
+                    healthFill.style.background = '#2ecc71';
+                }
+                
                 // 更新防御指示器
                 let defenseIndicator = player1Slots[i].querySelector('.defense-indicator');
-                if (gameData.players.player1.defense[i] > 0) {
+                if (gameData.players.player1.defense[i] > 0 && char.health > 0) {
                     if (!defenseIndicator) {
                         defenseIndicator = document.createElement('div');
                         defenseIndicator.className = 'defense-indicator';
@@ -1341,9 +1447,18 @@
                 const healthFill = player2Slots[i].querySelector('.health-fill');
                 healthFill.style.width = (char.health / char.maxHealth * 100) + '%';
                 
+                // 设置死亡状态
+                if (char.health <= 0) {
+                    player2Slots[i].classList.add('dead');
+                    healthFill.style.background = '#888';
+                } else {
+                    player2Slots[i].classList.remove('dead');
+                    healthFill.style.background = '#2ecc71';
+                }
+                
                 // 更新防御指示器
                 let defenseIndicator = player2Slots[i].querySelector('.defense-indicator');
-                if (gameData.players.player2.defense[i] > 0) {
+                if (gameData.players.player2.defense[i] > 0 && char.health > 0) {
                     if (!defenseIndicator) {
                         defenseIndicator = document.createElement('div');
                         defenseIndicator.className = 'defense-indicator';
@@ -1445,10 +1560,15 @@
                 gameData.characters[char].health = 15;
             }
             
-            // 清除选择状态
+            // 清除选择状态和死亡状态
             const selectedCards = document.querySelectorAll('.character-card.selected');
             selectedCards.forEach(card => {
                 card.classList.remove('selected');
+            });
+            
+            const deadSlots = document.querySelectorAll('.character-slot.dead');
+            deadSlots.forEach(slot => {
+                slot.classList.remove('dead');
             });
             
             // 切换回模式选择界面
