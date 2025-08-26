@@ -107,6 +107,19 @@
             text-align: center;
             cursor: pointer;
             transition: transform 0.3s, box-shadow 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .character-card .avatar {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            margin: 0 auto 10px;
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            border: 2px solid #fff;
         }
         
         .character-card:hover {
@@ -165,6 +178,17 @@
             text-align: center;
             margin: 5px;
             position: relative;
+        }
+        
+        .character-slot .avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            margin: 0 auto 5px;
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            border: 2px solid #fff;
         }
         
         .health-bar {
@@ -348,6 +372,8 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- YAML 解析库 -->
     <script src="https://cdn.jsdelivr.net/npm/js-yaml@4.1.0/dist/js-yaml.min.js"></script>
+    <!-- 游戏配置文件 - 作为YAML的备用方案 -->
+    <script src="game-config.js"></script>
 </head>
 <body>
     <div class="container">
@@ -519,9 +545,168 @@
     </div>
 
     <script>
+        // 内嵌配置数据 - 兼容虚拟主机
+        const embeddedCharacters = {
+            cafe: {
+                name: "Cafe",
+                display_name: "Cafe",
+                max_hp: 15,
+                description: "每回合第一次造成伤害时伤害加1",
+                avatar: "default.png",
+                skills: [
+                    {
+                        name: "首击强化",
+                        type: "passive",
+                        trigger: "first_damage_dealt",
+                        effect: "damage_bonus",
+                        value: 1,
+                        description: "每回合第一次造成伤害时伤害+1"
+                    }
+                ]
+            },
+            xinhe: {
+                name: "xinhe",
+                display_name: "星河",
+                max_hp: 15,
+                description: "每回合不使用技能时抽取一个行动卡",
+                avatar: "default.png",
+                skills: [
+                    {
+                        name: "静谧抽卡",
+                        type: "passive",
+                        trigger: "turn_end_no_skill",
+                        effect: "draw_card",
+                        value: 1,
+                        description: "每回合不使用技能时抽取1张行动卡"
+                    }
+                ]
+            },
+            yangguang: {
+                name: "yangguang",
+                display_name: "阳光",
+                max_hp: 15,
+                description: "对方回合没有使用攻击卡时，下回合额外抽取2张卡",
+                avatar: "default.png",
+                skills: [
+                    {
+                        name: "和平奖励",
+                        type: "passive",
+                        trigger: "opponent_no_attack",
+                        effect: "draw_card",
+                        value: 2,
+                        description: "对方上回合未使用攻击卡时，本回合额外抽取2张卡"
+                    }
+                ]
+            },
+            liuli: {
+                name: "liuli",
+                display_name: "琉璃",
+                max_hp: 15,
+                description: "受到攻击时进行1-6随机判定，6时免疫并反击2点",
+                avatar: "default.png",
+                skills: [
+                    {
+                        name: "幸运反击",
+                        type: "passive",
+                        trigger: "take_damage",
+                        effect: "lucky_counter",
+                        value: {
+                            dice_range: [1, 6],
+                            lucky_number: 6,
+                            counter_damage: 2
+                        },
+                        description: "受到攻击时1-6随机判定，6时免疫攻击并反击2点伤害"
+                    }
+                ]
+            },
+            jun: {
+                name: "jun",
+                display_name: "俊",
+                max_hp: 15,
+                description: "可以帮队友承受伤害（每回合一次），前两次伤害减1",
+                avatar: "default.png",
+                skills: [
+                    {
+                        name: "护盾守护",
+                        type: "passive",
+                        trigger: "teammate_take_damage",
+                        effect: "damage_redirect",
+                        value: 1,
+                        description: "可以代替队友承受伤害，每回合限一次"
+                    },
+                    {
+                        name: "坚韧减伤",
+                        type: "passive",
+                        trigger: "take_damage",
+                        effect: "damage_reduction",
+                        value: {
+                            max_times: 2,
+                            reduction: 1
+                        },
+                        description: "每回合前两次受到的伤害减少1点"
+                    }
+                ]
+            }
+        };
+
+        const embeddedActionCards = {
+            attack: {
+                name: "attack",
+                display_name: "攻击",
+                description: "减少对方3点生命值",
+                target_type: "enemy",
+                effect_type: "damage",
+                base_value: 3,
+                quantity: 10
+            },
+            heal: {
+                name: "heal",
+                display_name: "回血",
+                description: "增加自身2点生命值",
+                target_type: "ally",
+                effect_type: "heal",
+                base_value: 2,
+                quantity: 10
+            },
+            defend: {
+                name: "defend",
+                display_name: "防御",
+                description: "下一次受到伤害减少1点",
+                target_type: "ally",
+                effect_type: "defense",
+                base_value: 1,
+                quantity: 10
+            }
+        };
+
+        const embeddedTeamEffects = {
+            jun_liuli: {
+                name: "俊琉璃组合",
+                characters: ["jun", "liuli"],
+                effect: "first_attack_bonus",
+                value: 1,
+                description: "每回合第一次攻击伤害+1"
+            },
+            cafe_xinhe: {
+                name: "Cafe星河组合",
+                characters: ["cafe", "xinhe"],
+                effect: "extra_draw",
+                value: 2,
+                description: "每回合额外抽取2张卡"
+            },
+            yangguang_liuli: {
+                name: "阳光琉璃组合",
+                characters: ["yangguang", "liuli"],
+                effect: "first_damage_immunity",
+                value: 1,
+                description: "免除每回合第一次受到的伤害"
+            }
+        };
+        
         // YAML 数据存储
         let yamlCharacters = {};
         let yamlActionCards = {};
+        let yamlTeamEffects = {};
         
         // 加载 YAML 文件的函数
         async function loadYAMLFile(url) {
@@ -546,22 +731,57 @@
             try {
                 console.log('开始加载配置文件...');
                 
-                // 加载角色配置
-                const charactersData = await loadYAMLFile('characters.yaml');
-                if (charactersData && charactersData.characters) {
-                    yamlCharacters = charactersData.characters;
-                    console.log('角色配置加载成功:', yamlCharacters);
-                } else {
-                    console.warn('角色配置加载失败，使用默认配置');
+                // 尝试加载YAML文件，如果失败则使用内嵌配置
+                let charactersLoaded = false;
+                let actionCardsLoaded = false;
+                
+                try {
+                    // 加载角色配置
+                    const charactersData = await loadYAMLFile('characters.yaml');
+                    if (charactersData && charactersData.characters) {
+                        yamlCharacters = charactersData.characters;
+                        yamlTeamEffects = charactersData.team_effects || embeddedTeamEffects;
+                        charactersLoaded = true;
+                        console.log('YAML角色配置加载成功:', yamlCharacters);
+                    }
+                } catch (error) {
+                    console.warn('YAML角色配置加载失败，使用内嵌配置:', error);
                 }
                 
-                // 加载行动卡配置
-                const actionCardsData = await loadYAMLFile('action_cards.yaml');
-                if (actionCardsData && actionCardsData.action_cards) {
-                    yamlActionCards = actionCardsData.action_cards;
-                    console.log('行动卡配置加载成功:', yamlActionCards);
-                } else {
-                    console.warn('行动卡配置加载失败，使用默认配置');
+                if (!charactersLoaded) {
+                    // 尝试使用外部JavaScript配置文件
+                    if (window.GameConfig && window.GameConfig.characters) {
+                        yamlCharacters = window.GameConfig.characters;
+                        yamlTeamEffects = window.GameConfig.team_effects || embeddedTeamEffects;
+                        console.log('使用外部JS配置文件中的角色配置');
+                    } else {
+                        yamlCharacters = embeddedCharacters;
+                        yamlTeamEffects = embeddedTeamEffects;
+                        console.log('使用内嵌角色配置');
+                    }
+                }
+                
+                try {
+                    // 加载行动卡配置
+                    const actionCardsData = await loadYAMLFile('action_cards.yaml');
+                    if (actionCardsData && actionCardsData.action_cards) {
+                        yamlActionCards = actionCardsData.action_cards;
+                        actionCardsLoaded = true;
+                        console.log('YAML行动卡配置加载成功:', yamlActionCards);
+                    }
+                } catch (error) {
+                    console.warn('YAML行动卡配置加载失败，使用内嵌配置:', error);
+                }
+                
+                if (!actionCardsLoaded) {
+                    // 尝试使用外部JavaScript配置文件
+                    if (window.GameConfig && window.GameConfig.action_cards) {
+                        yamlActionCards = window.GameConfig.action_cards;
+                        console.log('使用外部JS配置文件中的行动卡配置');
+                    } else {
+                        yamlActionCards = embeddedActionCards;
+                        console.log('使用内嵌行动卡配置');
+                    }
                 }
                 
                 // 加载完成后更新游戏数据
@@ -573,16 +793,27 @@
                 loadingIndicator.style.display = 'none';
                 modeOptions.style.display = 'flex';
                 
-                console.log('所有配置文件加载完成');
-            } catch (error) {
-                console.error('配置文件加载出错:', error);
+                const configSource = (charactersLoaded && actionCardsLoaded) ? 'YAML文件' : '内嵌配置';
+                console.log(`配置加载完成，使用${configSource}`);
+                addLog(`游戏配置已加载（${configSource}）`);
                 
-                // 即使加载失败也要显示界面
-                loadingIndicator.innerHTML = '<i class="fas fa-exclamation-triangle" style="color: orange; margin-right: 10px;"></i>配置加载失败，使用默认配置';
-                setTimeout(() => {
-                    loadingIndicator.style.display = 'none';
-                    modeOptions.style.display = 'flex';
-                }, 2000);
+            } catch (error) {
+                console.error('配置文件加载出错，使用内嵌配置:', error);
+                
+                // 使用内嵌配置作为最后的备用方案
+                if (window.GameConfig) {
+                    yamlCharacters = window.GameConfig.characters || embeddedCharacters;
+                    yamlActionCards = window.GameConfig.action_cards || embeddedActionCards;
+                    yamlTeamEffects = window.GameConfig.team_effects || embeddedTeamEffects;
+                    console.log('使用外部JS配置作为备用方案');
+                    addLog('游戏配置已加载（JS配置文件）');
+                } else {
+                    yamlCharacters = embeddedCharacters;
+                    yamlActionCards = embeddedActionCards;
+                    yamlTeamEffects = embeddedTeamEffects;
+                    console.log('使用内嵌配置作为最终备用方案');
+                    addLog('游戏配置已加载（内嵌备用配置）');
+                }
             }
         }
         
@@ -607,9 +838,17 @@
                         maxHealth: char.max_hp || 15,
                         skill: char.description || "",
                         skills: char.skills || [],
-                        originalKey: key // 保存原始key用于其他地方
+                        originalKey: key, // 保存原始key用于其他地方
+                        avatar: char.avatar || 'default.png' // 头像URL，默认使用default.png
                     };
                 }
+            }
+            
+            // 从characters.yaml加载队伍效果
+            if (yamlTeamEffects && Object.keys(yamlTeamEffects).length > 0) {
+                gameData.teamEffects = yamlTeamEffects;
+            } else {
+                gameData.teamEffects = {};
             }
             
             // 更新行动卡数据
@@ -643,6 +882,7 @@
                     cardDiv.className = 'character-card';
                     cardDiv.setAttribute('data-character', key);
                     cardDiv.innerHTML = `
+                        <div class="avatar" style="background-image: url('${char.avatar}')"></div>
                         <h3>${char.name}</h3>
                         <p>${char.skill}</p>
                     `;
@@ -667,10 +907,13 @@
             if (debugInfo && charCount && cardCount && yamlStatus) {
                 charCount.textContent = Object.keys(gameData.characters).length;
                 cardCount.textContent = gameData.actionCards.length;
-                yamlStatus.textContent = (Object.keys(yamlCharacters).length > 0 && Object.keys(yamlActionCards).length > 0) ? '成功' : '部分失败';
                 
-                // 在开发模式下显示调试信息  
-                if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+                // 检测配置来源
+                const isYamlLoaded = (yamlCharacters !== embeddedCharacters) || (yamlActionCards !== embeddedActionCards);
+                yamlStatus.textContent = isYamlLoaded ? 'YAML文件' : '内嵌配置';
+                
+                // 在开发模式下或localhost环境显示调试信息  
+                if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.search.includes('debug=1')) {
                     debugInfo.style.display = 'block';
                 }
             }
@@ -679,18 +922,9 @@
         // 游戏数据
         const gameData = {
             mode: null, // 'pvp' 或 'ai'
-            characters: {
-                cafe: { name: "Cafe", health: 15, maxHealth: 15, skill: "每回合第一次造成伤害时伤害加1" },
-                星河: { name: "星河", health: 15, maxHealth: 15, skill: "每回合不使用技能时抽取一个行动卡" },
-                阳光: { name: "阳光", health: 15, maxHealth: 15, skill: "对方回合没有使用攻击行动卡时，下回合额外抽2张卡" },
-                琉璃: { name: "琉璃", health: 15, maxHealth: 15, skill: "受到攻击时进行判定，1/6几率免疫并反击" },
-                俊: { name: "俊", health: 15, maxHealth: 15, skill: "帮助队友承受伤害，每回合前两次伤害减少1点" }
-            },
-            actionCards: [
-                { type: "attack", name: "攻击", effect: "减少对方3点生命值", count: 10 },
-                { type: "heal", name: "回血", effect: "增加自身2点生命值", count: 10 },
-                { type: "defense", name: "防御", effect: "下一次收到伤害减少1点", count: 10 }
-            ],
+            characters: {}, // 将从YAML文件加载
+            actionCards: [], // 将从YAML文件加载
+            teamEffects: {}, // 将从YAML文件加载
             players: {
                 player1: { 
                     characters: [], 
@@ -699,7 +933,8 @@
                     deck: [], 
                     discard: [],
                     defense: [0, 0], // 每个角色的防御状态
-                    firstAttack: true // Cafe技能：第一次攻击加成
+                    firstAttack: true, // Cafe技能：第一次攻击加成
+                    teamEffects: [] // 当前激活的队伍效果
                 },
                 player2: { 
                     characters: [], 
@@ -708,7 +943,8 @@
                     deck: [], 
                     discard: [],
                     defense: [0, 0],
-                    firstAttack: true
+                    firstAttack: true,
+                    teamEffects: [] // 当前激活的队伍效果
                 }
             },
             currentPlayer: null,
@@ -930,13 +1166,23 @@
                     maxHealth: charTemplate.maxHealth,
                     skill: charTemplate.skill,
                     skills: charTemplate.skills || [],
-                    originalKey: charTemplate.originalKey || charName
+                    originalKey: charTemplate.originalKey || charName,
+                    avatar: charTemplate.avatar || 'default.png'
                 };
                 
                 gameData.players.player1.characterInstances.push(charInstance);
                 
                 player1Slots[i].setAttribute('data-character', charName);
                 player1Slots[i].querySelector('h3').textContent = charInstance.name;
+                
+                // 添加或更新头像
+                let avatarElement = player1Slots[i].querySelector('.avatar');
+                if (!avatarElement) {
+                    avatarElement = document.createElement('div');
+                    avatarElement.className = 'avatar';
+                    player1Slots[i].insertBefore(avatarElement, player1Slots[i].firstChild);
+                }
+                avatarElement.style.backgroundImage = `url('${charInstance.avatar}')`;
             }
             
             // 玩家2的角色
@@ -952,13 +1198,23 @@
                     maxHealth: charTemplate.maxHealth,
                     skill: charTemplate.skill,
                     skills: charTemplate.skills || [],
-                    originalKey: charTemplate.originalKey || charName
+                    originalKey: charTemplate.originalKey || charName,
+                    avatar: charTemplate.avatar || 'default.png'
                 };
                 
                 gameData.players.player2.characterInstances.push(charInstance);
                 
                 player2Slots[i].setAttribute('data-character', charName);
                 player2Slots[i].querySelector('h3').textContent = charInstance.name;
+                
+                // 添加或更新头像
+                let avatarElement = player2Slots[i].querySelector('.avatar');
+                if (!avatarElement) {
+                    avatarElement = document.createElement('div');
+                    avatarElement.className = 'avatar';
+                    player2Slots[i].insertBefore(avatarElement, player2Slots[i].firstChild);
+                }
+                avatarElement.style.backgroundImage = `url('${charInstance.avatar}')`;
             }
             
             // 检查并触发队伍效果
@@ -973,26 +1229,49 @@
             const p1Chars = gameData.players.player1.characters;
             const p2Chars = gameData.players.player2.characters;
             
-            // 玩家1的队伍效果
-            if (p1Chars.includes('俊') && p1Chars.includes('琉璃')) {
-                addLog('【玩家1】触发队伍效果：俊和琉璃在同一队伍，自身每回合的第一次攻击+1！');
+            // 检查玩家1的队伍效果
+            if (gameData.teamEffects) {
+                for (const [effectKey, effect] of Object.entries(gameData.teamEffects)) {
+                    const requiredChars = effect.characters;
+                    
+                    // 检查玩家1是否有这个组合
+                    const p1HasCombo = requiredChars.every(charKey => {
+                        // 需要将原始key转换为显示key进行匹配
+                        const displayKey = getDisplayKeyFromOriginalKey(charKey);
+                        return p1Chars.includes(displayKey);
+                    });
+                    
+                    if (p1HasCombo) {
+                        addLog(`【玩家1】触发队伍效果：${effect.name} - ${effect.description}`);
+                        gameData.players.player1.teamEffects = gameData.players.player1.teamEffects || [];
+                        gameData.players.player1.teamEffects.push(effectKey);
+                    }
+                    
+                    // 检查玩家2是否有这个组合
+                    const p2HasCombo = requiredChars.every(charKey => {
+                        const displayKey = getDisplayKeyFromOriginalKey(charKey);
+                        return p2Chars.includes(displayKey);
+                    });
+                    
+                    if (p2HasCombo) {
+                        const playerName = gameData.mode === 'ai' ? 'AI' : '玩家2';
+                        addLog(`【${playerName}】触发队伍效果：${effect.name} - ${effect.description}`);
+                        gameData.players.player2.teamEffects = gameData.players.player2.teamEffects || [];
+                        gameData.players.player2.teamEffects.push(effectKey);
+                    }
+                }
             }
-            if (p1Chars.includes('cafe') && p1Chars.includes('星河')) {
-                addLog('【玩家1】触发队伍效果：cafe和星河在同一队伍，自身每回合额外抽取2张行动卡！');
-            }
-            if (p1Chars.includes('阳光') && p1Chars.includes('琉璃')) {
-                addLog('【玩家1】触发队伍效果：阳光和琉璃在同一队伍，可以免除自身受到的第一次伤害！');
-            }
-            
-            // 玩家2的队伍效果
-            if (p2Chars.includes('俊') && p2Chars.includes('琉璃')) {
-                addLog(`【${gameData.mode === 'ai' ? 'AI' : '玩家2'}】触发队伍效果：俊和琉璃在同一队伍，自身每回合的第一次攻击+1！`);
-            }
-            if (p2Chars.includes('cafe') && p2Chars.includes('星河')) {
-                addLog(`【${gameData.mode === 'ai' ? 'AI' : '玩家2'}】触发队伍效果：cafe和星河在同一队伍，自身每回合额外抽取2张行动卡！`);
-            }
-            if (p2Chars.includes('阳光') && p2Chars.includes('琉璃')) {
-                addLog(`【${gameData.mode === 'ai' ? 'AI' : '玩家2'}】触发队伍效果：阳光和琉璃在同一队伍，可以免除自身受到的第一次伤害！`);
+        }
+        
+        // 将原始key转换为显示key的辅助函数
+        function getDisplayKeyFromOriginalKey(originalKey) {
+            switch(originalKey) {
+                case 'xinhe': return '星河';
+                case 'yangguang': return '阳光';
+                case 'liuli': return '琉璃';
+                case 'jun': return '俊';
+                case 'cafe': return 'cafe';
+                default: return originalKey;
             }
         }
         
@@ -1434,6 +1713,15 @@
                 } else if (defenseIndicator) {
                     defenseIndicator.remove();
                 }
+                
+                // 更新头像
+                let avatarElement = player1Slots[i].querySelector('.avatar');
+                if (!avatarElement) {
+                    avatarElement = document.createElement('div');
+                    avatarElement.className = 'avatar';
+                    player1Slots[i].insertBefore(avatarElement, player1Slots[i].firstChild);
+                }
+                avatarElement.style.backgroundImage = `url('${char.avatar}')`;
             }
             
             // 更新玩家2的角色
@@ -1468,6 +1756,15 @@
                 } else if (defenseIndicator) {
                     defenseIndicator.remove();
                 }
+                
+                // 更新头像
+                let avatarElement = player2Slots[i].querySelector('.avatar');
+                if (!avatarElement) {
+                    avatarElement = document.createElement('div');
+                    avatarElement.className = 'avatar';
+                    player2Slots[i].insertBefore(avatarElement, player2Slots[i].firstChild);
+                }
+                avatarElement.style.backgroundImage = `url('${char.avatar}')`;
             }
         }
         
@@ -1537,7 +1834,8 @@
                 deck: [], 
                 discard: [],
                 defense: [0, 0],
-                firstAttack: true
+                firstAttack: true,
+                teamEffects: []
             };
             
             gameData.players.player2 = { 
@@ -1547,7 +1845,8 @@
                 deck: [], 
                 discard: [],
                 defense: [0, 0],
-                firstAttack: true
+                firstAttack: true,
+                teamEffects: []
             };
             
             gameData.currentPlayer = null;
@@ -1555,9 +1854,9 @@
             gameData.selectedCard = null;
             gameData.usedAttackThisTurn = false;
             
-            // 重置角色血量
+            // 重置角色血量为各自的最大血量
             for (const char in gameData.characters) {
-                gameData.characters[char].health = 15;
+                gameData.characters[char].health = gameData.characters[char].maxHealth;
             }
             
             // 清除选择状态和死亡状态
