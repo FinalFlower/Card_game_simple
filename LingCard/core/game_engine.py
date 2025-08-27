@@ -66,12 +66,42 @@ class GameEngine:
         game_state.add_log(f"玩家{player.id} 回合开始，抽了{cards_to_draw}张牌。")
 
     def process_turn_end(self, game_state: GameState):
+        """
+        处理回合结束逻辑，包括角色技能、buff效果等
+        """
         player = game_state.get_current_player()
+        opponent = game_state.get_opponent_player()
+        
+        # 处理当前玩家的角色技能和状态重置
         for char in player.get_alive_characters():
             char.on_turn_end(game_state, player, self)
-            char.reset_turn_status() # 重置回合状态
+            char.reset_turn_status()  # 重置回合状态
+        
+        # 处理所有玩家角色的buff效果（中毒等持续伤害在回合结束时结算）
+        all_players = [player, opponent]
+        for p in all_players:
+            for char in p.characters:  # 包括死亡角色，因为buff可能在死亡后仍然存在
+                if char.is_alive:  # 只对正在生存的角色应用buff效果
+                    # 应用buff效果（如中毒伤害）
+                    buff_results = char.apply_all_buffs(game_state)
+                    
+                    # 检查buff效果是否导致角色死亡
+                    if not char.is_alive:
+                        game_state.add_log(f"{char.name} 因buff效果而死亡！")
+                        # 立即检查是否导致游戏结束
+                        self.check_game_over(game_state)
+                        if game_state.game_over:
+                            game_state.add_log(f"玩家{player.id} 回合结束。")
+                            return  # 游戏结束，立即返回
+                
+                # 处理buff的时间推进和清理（包括死亡角色）
+                char.tick_buffs(game_state)
         
         game_state.add_log(f"玩家{player.id} 回合结束。")
+        
+        # 检查游戏是否结束（如果还未结束的话）
+        if not game_state.game_over:
+            self.check_game_over(game_state)
 
     def execute_action(self, game_state: GameState, card_idx: int, user_char_idx: int, target_char_idx: int):
         player = game_state.get_current_player()
@@ -146,6 +176,13 @@ class GameEngine:
                 return False
             target_char = alive_characters[target_char_idx]
             self._execute_defend(game_state, user_char, card, target_char)
+        elif card.action_type == ActionType.POISON:
+            opponent_alive = opponent.get_alive_characters()
+            if target_char_idx >= len(opponent_alive):
+                game_state.add_log(f"错误：无效的目标角色索引")
+                return False
+            target_char = opponent_alive[target_char_idx]
+            self._execute_poison(game_state, user_char, card, target_char)
             
         self.check_game_over(game_state)
         return True
@@ -189,6 +226,29 @@ class GameEngine:
         def_amount = card.get_base_value()
         target.add_defense(def_amount)
         game_state.add_log(f"{user.name} 对 {target.name} 使用防御，增加 {def_amount} 点防御。")
+    
+    def _execute_poison(self, game_state, user, card, target):
+        """
+        执行毒素卡效果，对目标施加中毒buff
+        
+        Args:
+            game_state: 游戏状态
+            user: 使用者
+            card: 毒素卡
+            target: 目标角色
+        """
+        from LingCard.buffs.poison import PoisonBuff
+        
+        poison_stacks = card.get_base_value()  # 获取中毒层数
+        poison_buff = PoisonBuff(stacks=poison_stacks, caster=user)  # 传入施加者信息
+        
+        # 对目标施加中毒buff
+        success = target.add_buff(poison_buff, game_state)
+        
+        if success:
+            game_state.add_log(f"{user.name} 对 {target.name} 使用淬毒，施加 {poison_stacks} 层中毒效果。")
+        else:
+            game_state.add_log(f"{user.name} 对 {target.name} 使用淬毒，但效果施加失败。")
 
     def check_game_over(self, game_state: GameState):
         if game_state.get_current_player().is_defeated():

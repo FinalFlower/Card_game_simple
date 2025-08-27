@@ -18,6 +18,7 @@ class ActionType(Enum):
     ATTACK = "攻击"
     HEAL = "回血"
     DEFEND = "防御"
+    POISON = "毒素"  # 新增：毒素类型，用于施加中毒等debuff
 
 class TeamEffect(Enum):
     """特殊队伍效果枚举"""

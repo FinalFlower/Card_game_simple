@@ -3,6 +3,7 @@ import yaml
 import random
 import time
 from LingCard.utils.enums import GamePhase, ActionType
+from LingCard.core.buff_system import BuffType
 from LingCard.core.game_state import GameState
 from LingCard.core.player import Player
 from LingCard.core.game_engine import GameEngine
@@ -133,7 +134,7 @@ class GameManager:
             if user_choice == -1: continue
 
             # 选择目标
-            if card.action_type == ActionType.ATTACK:
+            if card.action_type == ActionType.ATTACK or card.action_type == ActionType.POISON:
                 targets = self.game_state.get_opponent_player().get_alive_characters()
             else:
                 targets = player.get_alive_characters()
@@ -180,7 +181,7 @@ class GameManager:
                     
                     # 根据卡牌类型找到合适的目标
                     targets = []
-                    if card.action_type == ActionType.ATTACK:
+                    if card.action_type == ActionType.ATTACK or card.action_type == ActionType.POISON:
                         targets = opponent.get_alive_characters()
                     elif card.action_type == ActionType.HEAL:
                         # 只对受伤的角色使用治疗
@@ -255,6 +256,16 @@ class GameManager:
                 priority += 100  # 击杀优先级很高
             else:
                 priority += 50 - target_char.current_hp  # 血量越低优先级越高
+        
+        elif card.action_type == ActionType.POISON:
+            # 淬毒优先级：优先对血量高的敌人使用（持续伤害更有价值）
+            poison_stacks = card.get_base_value()
+            # 检查目标是否已经中毒
+            if hasattr(target_char, 'buff_manager') and target_char.has_buff(BuffType.POISON):
+                priority += 20  # 叠加中毒层数也有价值，但优先级较低
+            else:
+                priority += 40  # 新施加中毒优先级较高
+            priority += target_char.current_hp * 2  # 血量越高的敌人优先级越高
                 
         elif card.action_type == ActionType.HEAL:
             # 治疗优先级：优先治疗血量最低的角色

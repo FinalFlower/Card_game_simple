@@ -1,6 +1,7 @@
-from typing import Dict, Any
+from typing import Dict, Any, List
 from LingCard.core.action_slot import ActionSlot, ActionSlotType, ActionSlotManager
 from LingCard.core.energy_system import EnergySystem
+from LingCard.core.buff_system import BuffManager
 
 class Character:
     """人物卡基类"""
@@ -29,6 +30,9 @@ class Character:
         self.action_slot_manager = ActionSlotManager()
         # 初始化一个基础行动槽
         self.action_slot_manager.add_slot(ActionSlot(ActionSlotType.BASIC, max_uses=1))
+        
+        # Buff系统
+        self.buff_manager = BuffManager()
 
     def take_damage(self, damage: int) -> int:
         """基础受到伤害逻辑"""
@@ -161,6 +165,76 @@ class Character:
             'used_slots': total_count - available_count,
             'slots_detail': all_slots_status
         }
+    
+    # --- Buff系统相关方法 ---
+    
+    def add_buff(self, buff, game_state=None) -> bool:
+        """
+        添加buff效果
+        
+        Args:
+            buff: 要添加的buff实例
+            game_state: 游戏状态（用于记录日志）
+            
+        Returns:
+            bool: 是否成功添加
+        """
+        return self.buff_manager.add_buff(buff, game_state)
+    
+    def remove_buff(self, buff_type, game_state=None) -> bool:
+        """
+        移除指定类型的buff
+        
+        Args:
+            buff_type: 要移除的buff类型
+            game_state: 游戏状态（用于记录日志）
+            
+        Returns:
+            bool: 是否成功移除
+        """
+        return self.buff_manager.remove_buff(buff_type, game_state)
+    
+    def has_buff(self, buff_type) -> bool:
+        """
+        检查是否拥有指定类型的buff
+        
+        Args:
+            buff_type: buff类型
+            
+        Returns:
+            bool: 是否拥有指定buff
+        """
+        return self.buff_manager.has_buff(buff_type)
+    
+    def get_buff_info(self) -> str:
+        """
+        获取角色当前buff状态的描述
+        
+        Returns:
+            str: buff状态描述
+        """
+        return str(self.buff_manager)
+    
+    def apply_all_buffs(self, game_state) -> List:
+        """
+        应用所有buff效果
+        
+        Args:
+            game_state: 游戏状态
+            
+        Returns:
+            List: 所有buff效果的执行结果
+        """
+        return self.buff_manager.apply_all_buffs(self, game_state)
+    
+    def tick_buffs(self, game_state):
+        """
+        处理所有buff的时间推进和清理
+        
+        Args:
+            game_state: 游戏状态
+        """
+        self.buff_manager.tick_all_buffs(self, game_state)
 
     def reset_turn_status(self):
         """重置回合状态，可在子类中重写"""
@@ -172,6 +246,8 @@ class Character:
         
         # 重置所有行动槽
         self.action_slot_manager.reset_all_slots()
+        
+        # 注意：buff的回合结束处理在游戏引擎中单独处理，不在这里处理
         # 例子: self.status['first_damage_dealt'] = False
         pass
 
@@ -188,6 +264,7 @@ class Character:
             'energy_system': self.energy_system.to_dict(),
             'base_energy_limit': self.base_energy_limit,
             'damage_per_level': self.damage_per_level,
+            'buffs': self.buff_manager.to_dict(),  # 新增：buff数据序列化
         }
     
     @classmethod
@@ -224,6 +301,15 @@ class Character:
             instance.action_slot_manager = ActionSlotManager()
             old_slot = ActionSlot.from_dict(data['action_slot'])
             instance.action_slot_manager.add_slot(old_slot)
+        
+        # 加载buff数据（向后兼容）
+        if 'buffs' in data:
+            # TODO: 实现buff的从字典加载，需要在游戏引擎中处理
+            # 目前先初始化为空的BuffManager
+            instance.buff_manager = BuffManager()
+        else:
+            # 旧版本兼容：初始化空的BuffManager
+            instance.buff_manager = BuffManager()
         
         return instance
 

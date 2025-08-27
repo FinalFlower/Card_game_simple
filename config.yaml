@@ -8,6 +8,7 @@ game_settings:
     AttackCard: 10
     HealCard: 10
     DefendCard: 10
+    PoisonCard: 10  # 新增：淔毒卡
 
 team_effects:
   - characters: ["Jun", "Liuli"]

@@ -41,3 +41,17 @@ def load_cards() -> Dict[str, Type]:
     current_dir = os.path.dirname(os.path.abspath(__file__))
     cards_dir = os.path.join(os.path.dirname(current_dir), 'cards')
     return _load_classes_from_directory(cards_dir, ActionCard)
+
+def load_buffs() -> Dict[str, Type]:
+    """加载所有buff类"""
+    from LingCard.core.buff_system import Buff
+    # 获取当前文件的目录，并构建 buffs 目录的路径
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    buffs_dir = os.path.join(os.path.dirname(current_dir), 'buffs')
+    
+    # 检查buffs目录是否存在
+    if not os.path.exists(buffs_dir):
+        print(f"Warning: buffs directory not found at {buffs_dir}")
+        return {}
+    
+    return _load_classes_from_directory(buffs_dir, Buff)

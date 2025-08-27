@@ -152,10 +152,31 @@ def draw_player_info_left(term: Terminal, player, is_opponent: bool, width: int,
                 energy_text += f" Lv{generation_level}"
             
             energy_status = f" {energy_color(energy_text)}{term.normal}"
+            
+        # 显示buff状态（新增）
+        buff_status = ""
+        if hasattr(char, 'buff_manager') and len(char.buff_manager) > 0:
+            buff_info = char.get_buff_info()
+            if buff_info != "无buff效果":
+                # 缩短显示，只显示主要信息
+                if len(buff_info) > 15:  # 如果buff信息过长，缩短显示
+                    # 提取主要的buff名称和层数
+                    if "中毒" in buff_info:
+                        # 特殊处理中毒显示
+                        import re
+                        poison_match = re.search(r'中毒 x(\d+)', buff_info)
+                        if poison_match:
+                            buff_status = f" [🐍{poison_match.group(1)}]"
+                        else:
+                            buff_status = f" [🐍]"
+                    else:
+                        buff_status = f" [Buff]"
+                else:
+                    buff_status = f" [{buff_info}]"
         
         # 智能组合信息，确保重要信息不被截断
         char_info = smart_combine_char_info(
-            basic_info, defense, action_status, energy_status, width, term
+            basic_info, defense, action_status, energy_status, buff_status, width, term
         )
         
         print(char_info + term.normal)  # 确保每行结束后重置颜色
@@ -163,16 +184,17 @@ def draw_player_info_left(term: Terminal, player, is_opponent: bool, width: int,
     
     return lines_used
 
-def smart_combine_char_info(basic_info, defense, action_status, energy_status, width, term):
+def smart_combine_char_info(basic_info, defense, action_status, energy_status, buff_status, width, term):
     """智能组合角色信息，确保重要信息不被截断"""
     # 电能信息和行动槽是最重要的，必须保留
-    essential_info = basic_info + energy_status + action_status
+    # buff信息也很重要，优先级仅次于电能
+    essential_info = basic_info + energy_status + buff_status + action_status
     essential_width = get_text_width(essential_info)
     
     # 如果基本信息 + 重要信息能放下
     if essential_width <= width:
         # 尝试加入防御信息
-        full_info = basic_info + defense + action_status + energy_status
+        full_info = basic_info + defense + action_status + energy_status + buff_status
         if get_text_width(full_info) <= width:
             return full_info
         else:
@@ -186,13 +208,14 @@ def smart_combine_char_info(basic_info, defense, action_status, energy_status, w
             if len(char_name) > 4:  # 如果名字过长，缩短为2个字符+..
                 short_name = char_name[:2] + ".."
                 shortened_basic = basic_info.replace(char_name, short_name)
-                test_info = shortened_basic + energy_status + action_status
+                test_info = shortened_basic + energy_status + buff_status + action_status
                 if get_text_width(test_info) <= width:
                     return test_info
         
         # 如果还是太长，只保留最关键的信息
-        # 优先保留电能和生命值信息
-        return basic_info[:width-len(energy_status)-3] + ".." + energy_status
+        # 优先保留电能、buff和生命值信息
+        key_info_length = len(energy_status + buff_status)
+        return basic_info[:width-key_info_length-3] + ".." + energy_status + buff_status
 
 def wrap_text(text: str, width: int) -> list:
     """将文本按指定宽度进行换行，考虑中文字符宽度"""
@@ -296,7 +319,7 @@ def draw_selection(term: Terminal, prompt: str, options: list, selected_index: i
     
     # 绘制选择菜单（只在左侧区域）
     with term.location(y=start_y):
-        print("\n" + prompt + term.normal)  # 重置颜色
+        print("\n" + prompt)
         print()  # 空行
         
         for i, option in enumerate(options):
@@ -306,6 +329,6 @@ def draw_selection(term: Terminal, prompt: str, options: list, selected_index: i
                 display_option = option[:max_width-7] + "..."
             
             if i == selected_index:
-                print(term.black_on_white(f"> {display_option}") + term.normal)
+                print(term.black_on_white(f"> {display_option}"))
             else:
-                print(f"  {display_option}" + term.normal)
+                print(f"  {display_option}")
