@@ -42,6 +42,13 @@ class GameEngine:
         # 重置回合状态
         player.status['used_attack_this_turn'] = False
         
+        # 重置所有角色的行动槽（在回合开始时）
+        for char in player.characters:
+            if char.is_alive:
+                char.action_slot.reset_turn()
+        
+        game_state.add_log(f"玩家{player.id} 的所有角色行动槽已重置")
+        
         # 基础抽卡
         cards_to_draw = self.config['game_settings']['initial_hand_size']
         
@@ -69,22 +76,61 @@ class GameEngine:
         player = game_state.get_current_player()
         opponent = game_state.get_opponent_player()
 
+        # 检查角色索引是否有效
+        alive_characters = player.get_alive_characters()
+        if user_char_idx >= len(alive_characters):
+            game_state.add_log(f"错误：无效的角色索引")
+            return False
+        
+        user_char = alive_characters[user_char_idx]
+        
+        # 检查行动槽是否可用
+        if not user_char.can_act():
+            if not user_char.is_alive:
+                game_state.add_log(f"错误：{user_char.name} 已经死亡，无法行动")
+            else:
+                game_state.add_log(f"错误：{user_char.name} 的行动槽已用完，无法再次行动")
+            return False
+        
+        # 检查手牌索引是否有效
+        if card_idx >= len(player.hand):
+            game_state.add_log(f"错误：无效的手牌索引")
+            return False
+
         card = player.hand.pop(card_idx)
         player.discard_pile.append(card)
-        user_char = player.get_alive_characters()[user_char_idx]
+        
+        # 使用行动槽
+        if not user_char.try_use_action_slot():
+            # 这里不应该发生，因为我们已经检查过了
+            game_state.add_log(f"内部错误：无法使用{user_char.name}的行动槽")
+            return False
+        
+        game_state.add_log(f"{user_char.name} 使用了行动槽")
 
         if card.action_type == ActionType.ATTACK:
-            target_char = opponent.get_alive_characters()[target_char_idx]
+            opponent_alive = opponent.get_alive_characters()
+            if target_char_idx >= len(opponent_alive):
+                game_state.add_log(f"错误：无效的目标角色索引")
+                return False
+            target_char = opponent_alive[target_char_idx]
             player.status['used_attack_this_turn'] = True  # 标记使用了攻击卡
             self._execute_attack(game_state, player, user_char, card, target_char)
         elif card.action_type == ActionType.HEAL:
-            target_char = player.get_alive_characters()[target_char_idx]
+            if target_char_idx >= len(alive_characters):
+                game_state.add_log(f"错误：无效的目标角色索引")
+                return False
+            target_char = alive_characters[target_char_idx]
             self._execute_heal(game_state, user_char, card, target_char)
         elif card.action_type == ActionType.DEFEND:
-            target_char = player.get_alive_characters()[target_char_idx]
+            if target_char_idx >= len(alive_characters):
+                game_state.add_log(f"错误：无效的目标角色索引")
+                return False
+            target_char = alive_characters[target_char_idx]
             self._execute_defend(game_state, user_char, card, target_char)
             
         self.check_game_over(game_state)
+        return True
 
     def _execute_attack(self, game_state, player, attacker, card, target):
         damage = card.get_base_value()

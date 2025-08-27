@@ -1,4 +1,5 @@
 from typing import Dict, Any
+from LingCard.core.action_slot import ActionSlot, ActionSlotType
 
 class Character:
     """人物卡基类"""
@@ -10,6 +11,9 @@ class Character:
         self.defense_buff = 0
         self.is_alive = True
         self.status: Dict[str, Any] = {} # 用于存储各种技能状态
+        
+        # 行动槽系统
+        self.action_slot = ActionSlot(ActionSlotType.BASIC, max_uses=1)
 
     def take_damage(self, damage: int) -> int:
         """基础受到伤害逻辑"""
@@ -30,9 +34,42 @@ class Character:
 
     def add_defense(self, amount: int):
         self.defense_buff += amount
+    
+    # --- 行动槽相关方法 ---
+    
+    def can_act(self) -> bool:
+        """
+        检查角色是否可以行动
+        
+        Returns:
+            bool: 如果角色存活且有可用的行动槽返回True
+        """
+        return self.is_alive and self.action_slot.can_use()
+    
+    def try_use_action_slot(self) -> bool:
+        """
+        尝试使用行动槽
+        
+        Returns:
+            bool: 如果成功使用行动槽返回True，否则返回False
+        """
+        if not self.is_alive:
+            return False
+        return self.action_slot.use_slot()
+    
+    def get_action_slot_status(self) -> Dict[str, Any]:
+        """
+        获取行动槽状态信息
+        
+        Returns:
+            Dict: 行动槽状态信息
+        """
+        return self.action_slot.get_status()
 
     def reset_turn_status(self):
         """重置回合状态，可在子类中重写"""
+        # 重置行动槽
+        self.action_slot.reset_turn()
         # 例子: self.status['first_damage_dealt'] = False
         pass
 
@@ -45,6 +82,7 @@ class Character:
             'defense_buff': self.defense_buff,
             'is_alive': self.is_alive,
             'status': self.status,
+            'action_slot': self.action_slot.to_dict(),
         }
     
     @classmethod
@@ -60,6 +98,11 @@ class Character:
         instance.defense_buff = data.get('defense_buff')
         instance.is_alive = data.get('is_alive')
         instance.status = data.get('status', {})
+        
+        # 加载行动槽数据（向后兼容）
+        if 'action_slot' in data:
+            instance.action_slot = ActionSlot.from_dict(data['action_slot'])
+        
         return instance
 
     # --- HOOKS for skills ---

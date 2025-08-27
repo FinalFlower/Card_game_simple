@@ -19,6 +19,58 @@ class Player:
 
     def get_alive_characters(self) -> List[Character]:
         return [char for char in self.characters if char.is_alive]
+    
+    # --- 行动槽管理相关方法 ---
+    
+    def get_characters_with_available_action_slots(self) -> List[Character]:
+        """
+        获取所有可以行动的角色（存活且有可用行动槽）
+        
+        Returns:
+            List[Character]: 可以行动的角色列表
+        """
+        return [char for char in self.characters if char.can_act()]
+    
+    def has_any_available_action_slots(self) -> bool:
+        """
+        检查是否有任意角色可以行动
+        
+        Returns:
+            bool: 如果有任意角色可以行动返回True
+        """
+        return len(self.get_characters_with_available_action_slots()) > 0
+    
+    def reset_all_action_slots(self):
+        """
+        重置所有角色的行动槽
+        """
+        for char in self.characters:
+            if char.is_alive:
+                char.action_slot.reset_turn()
+    
+    def get_action_slots_summary(self) -> Dict[str, Any]:
+        """
+        获取所有角色的行动槽状态总结
+        
+        Returns:
+            Dict: 包含行动槽状态信息的字典
+        """
+        summary = {
+            'total_characters': len(self.characters),
+            'alive_characters': len(self.get_alive_characters()),
+            'characters_with_action_slots': len(self.get_characters_with_available_action_slots()),
+            'character_details': []
+        }
+        
+        for char in self.characters:
+            char_info = {
+                'name': char.name,
+                'is_alive': char.is_alive,
+                'action_slot_status': char.get_action_slot_status() if char.is_alive else None
+            }
+            summary['character_details'].append(char_info)
+        
+        return summary
 
     def to_dict(self):
         return {

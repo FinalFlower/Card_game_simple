@@ -1,0 +1,208 @@
+global_info:
+  player_count: 2
+  turn_order:
+  - 0
+  - 1
+live_info:
+  current_player_idx: 0
+  current_round: 1
+  game_over: false
+  winner: null
+log:
+- 随机决定，玩家 1 先手！
+- 玩家1 的所有角色行动槽已重置
+- 玩家1 回合开始，抽了3张牌。
+- Cafe 使用了行动槽
+- 角色技能[Cafe]触发：第一次伤害+1！
+- 角色技能[琉璃]触发：进行随机判定... 结果是 6！
+- '[琉璃] 判定成功！免疫本次伤害并反击2点！'
+- Cafe 对 琉璃 使用攻击，造成 0 点伤害。
+- 琉璃 反击 Cafe，造成 2 点伤害。
+players:
+- characters:
+  - action_slot:
+      max_uses: 1
+      remaining_uses: 0
+      slot_type: BASIC
+      used_this_turn: true
+    class: Cafe
+    current_hp: 13
+    defense_buff: 0
+    is_alive: true
+    max_hp: 15
+    name: Cafe
+    status:
+      first_damage_dealt_this_turn: true
+  - action_slot:
+      max_uses: 1
+      remaining_uses: 1
+      slot_type: BASIC
+      used_this_turn: false
+    class: Liuli
+    current_hp: 15
+    defense_buff: 0
+    is_alive: true
+    max_hp: 15
+    name: 琉璃
+    status: {}
+  deck:
+  - class: DefendCard
+    name: 防御
+  - class: DefendCard
+    name: 防御
+  - class: DefendCard
+    name: 防御
+  - class: DefendCard
+    name: 防御
+  - class: AttackCard
+    name: 攻击
+  - class: AttackCard
+    name: 攻击
+  - class: AttackCard
+    name: 攻击
+  - class: AttackCard
+    name: 攻击
+  - class: HealCard
+    name: 回血
+  - class: DefendCard
+    name: 防御
+  - class: DefendCard
+    name: 防御
+  - class: HealCard
+    name: 回血
+  - class: HealCard
+    name: 回血
+  - class: HealCard
+    name: 回血
+  - class: HealCard
+    name: 回血
+  - class: AttackCard
+    name: 攻击
+  - class: DefendCard
+    name: 防御
+  - class: AttackCard
+    name: 攻击
+  - class: AttackCard
+    name: 攻击
+  - class: DefendCard
+    name: 防御
+  - class: DefendCard
+    name: 防御
+  - class: HealCard
+    name: 回血
+  - class: HealCard
+    name: 回血
+  - class: AttackCard
+    name: 攻击
+  - class: HealCard
+    name: 回血
+  - class: AttackCard
+    name: 攻击
+  - class: DefendCard
+    name: 防御
+  discard_pile:
+  - class: AttackCard
+    name: 攻击
+  hand:
+  - class: HealCard
+    name: 回血
+  - class: HealCard
+    name: 回血
+  id: 1
+  status:
+    used_attack_this_turn: true
+  team_effects: []
+- characters:
+  - action_slot:
+      max_uses: 1
+      remaining_uses: 1
+      slot_type: BASIC
+      used_this_turn: false
+    class: Liuli
+    current_hp: 15
+    defense_buff: 0
+    is_alive: true
+    max_hp: 15
+    name: 琉璃
+    status: {}
+  - action_slot:
+      max_uses: 1
+      remaining_uses: 1
+      slot_type: BASIC
+      used_this_turn: false
+    class: Jun
+    current_hp: 15
+    defense_buff: 0
+    is_alive: true
+    max_hp: 15
+    name: 俊
+    status:
+      damage_taken_count_this_turn: 0
+      has_protected_teammate_this_turn: false
+  deck:
+  - class: DefendCard
+    name: 防御
+  - class: DefendCard
+    name: 防御
+  - class: DefendCard
+    name: 防御
+  - class: HealCard
+    name: 回血
+  - class: AttackCard
+    name: 攻击
+  - class: HealCard
+    name: 回血
+  - class: HealCard
+    name: 回血
+  - class: DefendCard
+    name: 防御
+  - class: AttackCard
+    name: 攻击
+  - class: HealCard
+    name: 回血
+  - class: AttackCard
+    name: 攻击
+  - class: HealCard
+    name: 回血
+  - class: AttackCard
+    name: 攻击
+  - class: DefendCard
+    name: 防御
+  - class: HealCard
+    name: 回血
+  - class: HealCard
+    name: 回血
+  - class: HealCard
+    name: 回血
+  - class: AttackCard
+    name: 攻击
+  - class: DefendCard
+    name: 防御
+  - class: DefendCard
+    name: 防御
+  - class: HealCard
+    name: 回血
+  - class: DefendCard
+    name: 防御
+  - class: AttackCard
+    name: 攻击
+  - class: AttackCard
+    name: 攻击
+  - class: HealCard
+    name: 回血
+  - class: DefendCard
+    name: 防御
+  - class: DefendCard
+    name: 防御
+  - class: AttackCard
+    name: 攻击
+  - class: AttackCard
+    name: 攻击
+  - class: AttackCard
+    name: 攻击
+  discard_pile: []
+  hand: []
+  id: 2
+  status: {}
+  team_effects:
+  - JUN_LIULI

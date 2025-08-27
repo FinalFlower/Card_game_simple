@@ -14,6 +14,7 @@ class Xinhe(Character):
 
     def reset_turn_status(self):
         """回合结束，重置使用卡牌的标记"""
+        super().reset_turn_status()  # 调用父类方法以重置行动槽
         self.status['used_card_this_turn'] = False
 
     def on_card_played(self, card, game_state):

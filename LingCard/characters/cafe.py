@@ -14,7 +14,8 @@ class Cafe(Character):
         self.status['first_damage_dealt_this_turn'] = False
 
     def reset_turn_status(self):
-        """回合结束时，重置“第一次伤害”标记"""
+        """回合结束时，重置"第一次伤害"标记"""
+        super().reset_turn_status()  # 调用父类方法以重置行动槽
         self.status['first_damage_dealt_this_turn'] = False
         
     def on_deal_damage(self, damage: int, game_state) -> int:

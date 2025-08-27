@@ -16,6 +16,7 @@ class Jun(Character):
 
     def reset_turn_status(self):
         """回合结束，重置受伤次数和保护标记"""
+        super().reset_turn_status()  # 调用父类方法以重置行动槽
         self.status['damage_taken_count_this_turn'] = 0
         self.status['has_protected_teammate_this_turn'] = False
 
