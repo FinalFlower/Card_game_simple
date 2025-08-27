@@ -81,7 +81,13 @@ class GameManager:
         # 回合开始
         self.engine.process_turn_start(self.game_state)
         self.game_state.save()
-        self.phase = GamePhase.PLAYER_TURN
+        
+        # 根据先手玩家和游戏模式决定初始回合类型
+        current_player = self.game_state.get_current_player()
+        if self.vs_ai and current_player.id == 2:
+            self.phase = GamePhase.AI_TURN
+        else:
+            self.phase = GamePhase.PLAYER_TURN
 
     def _select_chars_for_player(self, player, player_name):
         available_chars = list(self.all_characters.values())
@@ -154,59 +160,123 @@ class GameManager:
         self.tui.render_and_show_message(self.game_state, f"AI (玩家 {player.id}) 正在思考...", 1.5)
 
         actions_taken = False
-        # 从后往前遍历手牌，这样在执行动作（pop牌）时不会影响后续遍历的索引
-        for card_idx, card in reversed(list(enumerate(player.hand))):
-            alive_ai_chars = player.get_alive_characters()
+        
+        # 主要AI行动循环
+        while True:
+            # 检查是否还有可以行动的角色
+            can_act_chars = [char for char in player.get_alive_characters() if char.can_act()]
+            if not can_act_chars:
+                self.tui.render_and_show_message(self.game_state, "AI 的所有角色都已用完行动槽，结束回合。", 2)
+                break
             
-            if not alive_ai_chars:
-                break # AI没有存活角色，无法行动
-
-            # 简化：总是让第一个存活的角色使用卡牌
-            user_char = alive_ai_chars[0]
-            user_char_idx = 0
+            # 查找可执行的行动（卡牌+角色组合）
+            possible_actions = []
             
-            target_char = None
-            target_idx = -1
-
-            if card.action_type == ActionType.ATTACK:
-                targets = opponent.get_alive_characters()
-                if targets:
-                    # 攻击血量最少的目标
-                    target_char = min(targets, key=lambda c: c.current_hp)
-                    target_idx = targets.index(target_char)
-
-            elif card.action_type == ActionType.HEAL:
-                targets = player.get_alive_characters()
-                # 寻找受伤最严重的角色
-                heal_candidates = [c for c in targets if c.current_hp < c.max_hp]
-                if heal_candidates:
-                    target_char = min(heal_candidates, key=lambda c: c.current_hp)
-                    target_idx = targets.index(target_char)
+            for card_idx, card in enumerate(player.hand):
+                for char_idx, char in enumerate(can_act_chars):
+                    # 检查角色是否有足够电能使用该卡牌
+                    if not char.can_consume_energy(card.energy_cost):
+                        continue
+                    
+                    # 根据卡牌类型找到合适的目标
+                    targets = []
+                    if card.action_type == ActionType.ATTACK:
+                        targets = opponent.get_alive_characters()
+                    elif card.action_type == ActionType.HEAL:
+                        # 只对受伤的角色使用治疗
+                        targets = [c for c in player.get_alive_characters() if c.current_hp < c.max_hp]
+                    elif card.action_type == ActionType.DEFEND:
+                        targets = player.get_alive_characters()
+                    
+                    # 为每个可能的目标创建行动选项
+                    for target_idx, target in enumerate(targets):
+                        action_priority = self._calculate_action_priority(card, char, target, player, opponent)
+                        possible_actions.append({
+                            'card_idx': card_idx,
+                            'user_char': char,
+                            'user_char_idx': player.get_alive_characters().index(char),
+                            'target_char': target,
+                            'target_idx': target_idx,
+                            'card': card,
+                            'priority': action_priority
+                        })
             
-            elif card.action_type == ActionType.DEFEND:
-                targets = player.get_alive_characters()
-                if targets:
-                    # 防御血量最少的角色
-                    target_char = min(targets, key=lambda c: c.current_hp)
-                    target_idx = targets.index(target_char)
-
-            # 如果找到了合法的目标，则执行行动
-            if target_char and target_idx != -1:
-                actions_taken = True
-                msg = f"AI 使用 [{user_char.name}] 对 [{target_char.name}] 打出了 [{card.name}]"
-                self.tui.render_and_show_message(self.game_state, msg, 2)
-                
-                self.engine.execute_action(self.game_state, card_idx, user_char_idx, target_idx)
-                self.game_state.save()
-                
-                if self.game_state.game_over:
-                    self.phase = GamePhase.GAME_OVER
-                    return
+            # 如果没有可执行的行动，结束回合
+            if not possible_actions:
+                reason = "没有足够电能或合适目标" if can_act_chars else "所有角色已用完行动槽"
+                self.tui.render_and_show_message(self.game_state, f"AI {reason}，结束回合。", 2)
+                break
+            
+            # 选择优先级最高的行动
+            best_action = max(possible_actions, key=lambda x: x['priority'])
+            
+            # 执行最佳行动
+            actions_taken = True
+            msg = f"AI 使用 [{best_action['user_char'].name}] 对 [{best_action['target_char'].name}] 打出了 [{best_action['card'].name}]"
+            self.tui.render_and_show_message(self.game_state, msg, 2)
+            
+            self.engine.execute_action(
+                self.game_state, 
+                best_action['card_idx'], 
+                best_action['user_char_idx'], 
+                best_action['target_idx']
+            )
+            self.game_state.save()
+            
+            if self.game_state.game_over:
+                self.phase = GamePhase.GAME_OVER
+                return
 
         if not actions_taken:
             self.tui.render_and_show_message(self.game_state, "AI 选择不出牌，结束回合。", 2)
         
         self.phase = GamePhase.TURN_END
+    
+    def _calculate_action_priority(self, card, user_char, target_char, player, opponent):
+        """
+        计算AI行动的优先级
+        
+        Args:
+            card: 要使用的卡牌
+            user_char: 使用卡牌的角色
+            target_char: 目标角色
+            player: AI玩家
+            opponent: 对手玩家
+            
+        Returns:
+            float: 行动优先级，数值越高优先级越高
+        """
+        priority = 0.0
+        
+        if card.action_type == ActionType.ATTACK:
+            # 攻击优先级：优先攻击血量低的敌人，能击杀的优先级更高
+            damage = card.get_base_value()
+            if target_char.current_hp <= damage:
+                priority += 100  # 击杀优先级很高
+            else:
+                priority += 50 - target_char.current_hp  # 血量越低优先级越高
+                
+        elif card.action_type == ActionType.HEAL:
+            # 治疗优先级：优先治疗血量最低的角色
+            heal_amount = card.get_base_value()
+            missing_hp = target_char.max_hp - target_char.current_hp
+            if missing_hp > 0:
+                priority += min(heal_amount, missing_hp) * 10  # 实际治疗量越多优先级越高
+                priority += (target_char.max_hp - target_char.current_hp) * 2  # 缺血越多优先级越高
+                
+        elif card.action_type == ActionType.DEFEND:
+            # 防御优先级：优先保护血量低的角色
+            if target_char.current_hp < target_char.max_hp * 0.5:
+                priority += 30  # 半血以下角色防御优先级较高
+            else:
+                priority += 10  # 基础防御优先级
+        
+        # 电能效率考虑：剩余电能较少时，优先使用低耗能卡牌
+        energy_ratio = user_char.energy_system.current_energy / user_char.energy_system.get_energy_limit()
+        if energy_ratio < 0.5:  # 电能不足一半时
+            priority -= card.energy_cost * 5  # 降低高耗能卡牌的优先级
+        
+        return priority
     # --------------------------------
 
     def _phase_turn_end(self):
@@ -215,13 +285,12 @@ class GameManager:
         self.engine.process_turn_start(self.game_state)
         self.game_state.save()
         
-        # --- 修改 AI 回合切换逻辑 ---
-        next_player = self.game_state.get_current_player()
-        if self.vs_ai and next_player.id == 2:
+        # 根据游戏模式和当前玩家决定下一个回合类型
+        current_player = self.game_state.get_current_player()
+        if self.vs_ai and current_player.id == 2:
             self.phase = GamePhase.AI_TURN
         else:
             self.phase = GamePhase.PLAYER_TURN
-        # ---------------------------
 
     def _phase_game_over(self):
         winner_id = self.game_state.winner

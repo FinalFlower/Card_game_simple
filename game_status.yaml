@@ -1,20 +1,20 @@
 global_info:
   player_count: 2
   turn_order:
-  - 0
   - 1
+  - 0
 live_info:
-  current_player_idx: 0
-  current_round: 3
+  current_player_idx: 1
+  current_round: 1
   game_over: false
   winner: null
 log:
-- 阳光 使用了行动槽
-- 阳光 对 阳光 使用防御，增加 1 点防御。
-- 错误：阳光 的行动槽已用完，无法再次行动
-- 错误：阳光 的行动槽已用完，无法再次行动
-- 错误：阳光 的行动槽已用完，无法再次行动
-- 错误：阳光 的行动槽已用完，无法再次行动
+- 琉璃 消耗 2 点电能使用 攻击
+- 琉璃 使用了行动槽
+- 队伍效果[俊琉璃]触发，伤害+1
+- 琉璃 对 Cafe 使用攻击，造成 4 点伤害。
+- 琉璃 发电等级提升到 1 级！
+- 电能上限增加到 4 点，行动槽增加到 2 个
 - 玩家2 回合结束。
 - 玩家1 的所有角色电能和行动槽已重置
 - 队伍效果[Cafe星河]触发，额外抽2张牌
@@ -26,22 +26,18 @@ players:
       remaining_uses: 1
       slot_type: BASIC
       used_this_turn: false
-    - max_uses: 1
-      remaining_uses: 1
-      slot_type: BASIC
-      used_this_turn: false
     base_energy_limit: 3
     class: Cafe
-    current_hp: 15
+    current_hp: 7
     damage_per_level: 5
     defense_buff: 0
     energy_system:
-      accumulated_damage: 7
+      accumulated_damage: 0
       base_action_slots: 1
       base_energy_limit: 3
-      current_energy: 4
+      current_energy: 3
       damage_per_level: 5
-      generation_level: 1
+      generation_level: 0
     is_alive: true
     max_hp: 15
     name: Cafe
@@ -73,6 +69,15 @@ players:
   - class: DefendCard
     energy_cost: 1
     name: 防御
+  - class: DefendCard
+    energy_cost: 1
+    name: 防御
+  - class: HealCard
+    energy_cost: 2
+    name: 回血
+  - class: DefendCard
+    energy_cost: 1
+    name: 防御
   - class: HealCard
     energy_cost: 2
     name: 回血
@@ -91,6 +96,33 @@ players:
   - class: HealCard
     energy_cost: 2
     name: 回血
+  - class: AttackCard
+    energy_cost: 2
+    name: 攻击
+  - class: HealCard
+    energy_cost: 2
+    name: 回血
+  - class: AttackCard
+    energy_cost: 2
+    name: 攻击
+  - class: DefendCard
+    energy_cost: 1
+    name: 防御
+  - class: AttackCard
+    energy_cost: 2
+    name: 攻击
+  - class: DefendCard
+    energy_cost: 1
+    name: 防御
+  - class: HealCard
+    energy_cost: 2
+    name: 回血
+  - class: HealCard
+    energy_cost: 2
+    name: 回血
+  - class: DefendCard
+    energy_cost: 1
+    name: 防御
   - class: DefendCard
     energy_cost: 1
     name: 防御
@@ -103,35 +135,14 @@ players:
   - class: AttackCard
     energy_cost: 2
     name: 攻击
-  - class: HealCard
-    energy_cost: 2
-    name: 回血
-  - class: DefendCard
-    energy_cost: 1
-    name: 防御
-  discard_pile:
   - class: AttackCard
     energy_cost: 2
     name: 攻击
   - class: AttackCard
     energy_cost: 2
     name: 攻击
+  discard_pile: []
   hand:
-  - class: HealCard
-    energy_cost: 2
-    name: 回血
-  - class: AttackCard
-    energy_cost: 2
-    name: 攻击
-  - class: AttackCard
-    energy_cost: 2
-    name: 攻击
-  - class: DefendCard
-    energy_cost: 1
-    name: 防御
-  - class: DefendCard
-    energy_cost: 1
-    name: 防御
   - class: DefendCard
     energy_cost: 1
     name: 防御
@@ -144,24 +155,9 @@ players:
   - class: AttackCard
     energy_cost: 2
     name: 攻击
-  - class: HealCard
-    energy_cost: 2
-    name: 回血
   - class: AttackCard
     energy_cost: 2
     name: 攻击
-  - class: AttackCard
-    energy_cost: 2
-    name: 攻击
-  - class: DefendCard
-    energy_cost: 1
-    name: 防御
-  - class: HealCard
-    energy_cost: 2
-    name: 回血
-  - class: DefendCard
-    energy_cost: 1
-    name: 防御
   id: 1
   status:
     used_attack_this_turn: false
@@ -174,22 +170,28 @@ players:
       slot_type: BASIC
       used_this_turn: false
     base_energy_limit: 3
-    class: Yangguang
-    current_hp: 8
-    damage_per_level: 5
-    defense_buff: 1
+    class: Jun
+    current_hp: 15
+    damage_per_level: 6
+    defense_buff: 0
     energy_system:
-      accumulated_damage: 0
+      accumulated_damage: 4
       base_action_slots: 1
       base_energy_limit: 3
-      current_energy: 3
-      damage_per_level: 5
+      current_energy: 2
+      damage_per_level: 6
       generation_level: 0
     is_alive: true
     max_hp: 15
-    name: 阳光
-    status: {}
+    name: 俊
+    status:
+      damage_taken_count_this_turn: 0
+      has_protected_teammate_this_turn: false
   - action_slots:
+    - max_uses: 1
+      remaining_uses: 1
+      slot_type: BASIC
+      used_this_turn: false
     - max_uses: 1
       remaining_uses: 1
       slot_type: BASIC
@@ -200,56 +202,23 @@ players:
     damage_per_level: 4
     defense_buff: 0
     energy_system:
-      accumulated_damage: 0
+      accumulated_damage: 4
       base_action_slots: 1
       base_energy_limit: 3
       current_energy: 3
       damage_per_level: 4
-      generation_level: 0
+      generation_level: 1
     is_alive: true
     max_hp: 15
     name: 琉璃
     status: {}
   deck:
-  - class: AttackCard
-    energy_cost: 2
-    name: 攻击
-  - class: HealCard
-    energy_cost: 2
-    name: 回血
   - class: HealCard
     energy_cost: 2
     name: 回血
   - class: AttackCard
     energy_cost: 2
     name: 攻击
-  - class: HealCard
-    energy_cost: 2
-    name: 回血
-  - class: HealCard
-    energy_cost: 2
-    name: 回血
-  - class: HealCard
-    energy_cost: 2
-    name: 回血
-  - class: DefendCard
-    energy_cost: 1
-    name: 防御
-  - class: DefendCard
-    energy_cost: 1
-    name: 防御
-  - class: HealCard
-    energy_cost: 2
-    name: 回血
-  - class: AttackCard
-    energy_cost: 2
-    name: 攻击
-  - class: AttackCard
-    energy_cost: 2
-    name: 攻击
-  - class: HealCard
-    energy_cost: 2
-    name: 回血
   - class: HealCard
     energy_cost: 2
     name: 回血
@@ -262,49 +231,82 @@ players:
   - class: DefendCard
     energy_cost: 1
     name: 防御
-  - class: DefendCard
-    energy_cost: 1
-    name: 防御
-  - class: AttackCard
-    energy_cost: 2
-    name: 攻击
-  - class: AttackCard
-    energy_cost: 2
-    name: 攻击
   - class: HealCard
     energy_cost: 2
     name: 回血
   - class: AttackCard
     energy_cost: 2
     name: 攻击
+  - class: HealCard
+    energy_cost: 2
+    name: 回血
   - class: DefendCard
     energy_cost: 1
     name: 防御
+  - class: DefendCard
+    energy_cost: 1
+    name: 防御
+  - class: DefendCard
+    energy_cost: 1
+    name: 防御
+  - class: AttackCard
+    energy_cost: 2
+    name: 攻击
+  - class: DefendCard
+    energy_cost: 1
+    name: 防御
+  - class: HealCard
+    energy_cost: 2
+    name: 回血
+  - class: DefendCard
+    energy_cost: 1
+    name: 防御
+  - class: HealCard
+    energy_cost: 2
+    name: 回血
+  - class: DefendCard
+    energy_cost: 1
+    name: 防御
+  - class: HealCard
+    energy_cost: 2
+    name: 回血
+  - class: HealCard
+    energy_cost: 2
+    name: 回血
+  - class: AttackCard
+    energy_cost: 2
+    name: 攻击
+  - class: HealCard
+    energy_cost: 2
+    name: 回血
+  - class: DefendCard
+    energy_cost: 1
+    name: 防御
+  - class: DefendCard
+    energy_cost: 1
+    name: 防御
+  - class: AttackCard
+    energy_cost: 2
+    name: 攻击
+  - class: HealCard
+    energy_cost: 2
+    name: 回血
   - class: AttackCard
     energy_cost: 2
     name: 攻击
   discard_pile:
-  - class: DefendCard
-    energy_cost: 1
-    name: 防御
-  - class: DefendCard
-    energy_cost: 1
-    name: 防御
-  hand:
-  - class: HealCard
+  - class: AttackCard
     energy_cost: 2
-    name: 回血
-  - class: DefendCard
-    energy_cost: 1
-    name: 防御
-  - class: DefendCard
-    energy_cost: 1
-    name: 防御
+    name: 攻击
+  - class: AttackCard
+    energy_cost: 2
+    name: 攻击
+  hand:
   - class: DefendCard
     energy_cost: 1
     name: 防御
   id: 2
   status:
-    used_attack_this_turn: false
+    used_attack_this_turn: true
   team_effects:
-  - YANGGUANG_LIULI
+  - JUN_LIULI
