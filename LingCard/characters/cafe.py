@@ -5,12 +5,15 @@ class Cafe(Character):
     """Cafe：每回合第一次造成伤害时伤害加1"""
     
     def __init__(self):
+        # Cafe的标准发电阈值：5 -> 8 -> 11 -> 14 -> 17
+        upgrade_thresholds = [5, 13, 24, 38, 55]
+        
         super().__init__(
             name="Cafe",
             description="每回合第一次造成伤害时伤害加1",
             max_hp=10,
             base_energy_limit=3,  # 基础电能上限
-            damage_per_level=5    # 每5点伤害提升1级发电等级
+            upgrade_thresholds=upgrade_thresholds
         )
         # 初始化技能状态
         self.status['first_damage_dealt_this_turn'] = False

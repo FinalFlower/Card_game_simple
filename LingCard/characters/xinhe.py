@@ -5,12 +5,15 @@ class Xinhe(Character):
     """星河：每回合不使用技能时抽取一个行动卡"""
 
     def __init__(self):
+        # 星河的辅助型发电阈值（均衡）：5 -> 8 -> 11 -> 14 -> 17
+        upgrade_thresholds = [5, 13, 24, 38, 55]
+        
         super().__init__(
             name="星河",
             description="每回合不使用技能时抽取一个行动卡",
             max_hp=10,
             base_energy_limit=3,  # 基础电能上限
-            damage_per_level=5    # 每5点伤害提升1级（辅助型角色，均衡发电）
+            upgrade_thresholds=upgrade_thresholds
         )
         self.status['used_card_this_turn'] = False
 

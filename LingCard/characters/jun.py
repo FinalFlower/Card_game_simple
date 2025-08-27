@@ -6,12 +6,15 @@ class Jun(Character):
     """俊：可以帮队友承受伤害（每回合一次），前两次伤害减1"""
     
     def __init__(self):
+        # 俊的守护型发电阈值（较慢）：6 -> 10 -> 15 -> 21 -> 28
+        upgrade_thresholds = [6, 16, 31, 52, 80]
+        
         super().__init__(
             name="俊",
             description="可以帮队友承受伤害（每回合一次），前两次伤害减1",
             max_hp=10,
             base_energy_limit=3,  # 基础电能上限
-            damage_per_level=6    # 每6点伤害提升1级（守护型角色，更难发电）
+            upgrade_thresholds=upgrade_thresholds
         )
         self.status['damage_taken_count_this_turn'] = 0
         self.status['has_protected_teammate_this_turn'] = False

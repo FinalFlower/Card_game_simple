@@ -1,5 +1,5 @@
 # LingCard/core/energy_system.py
-from typing import Dict, Any
+from typing import Dict, Any, Optional, List
 
 class EnergySystem:
     """
@@ -12,13 +12,14 @@ class EnergySystem:
     - 支持电能上限和行动槽扩展
     """
     
-    def __init__(self, base_energy_limit: int = 3, base_action_slots: int = 1):
+    def __init__(self, base_energy_limit: int = 3, base_action_slots: int = 1, upgrade_thresholds: Optional[List[int]] = None):
         """
         初始化电能系统
         
         Args:
             base_energy_limit: 基础电能上限
             base_action_slots: 基础行动槽数量
+            upgrade_thresholds: 各等级升级所需累积伤害阈值列表
         """
         self.base_energy_limit = base_energy_limit
         self.base_action_slots = base_action_slots
@@ -28,8 +29,10 @@ class EnergySystem:
         self.generation_level = 0  # 发电等级
         self.accumulated_damage = 0  # 累积伤害量
         
-        # 发电等级配置
-        self.damage_per_level = 5  # 每级需要的伤害量
+        # 发电等级配置 - 使用固定的升级阈值
+        # 默认阈值：5, 13, 24, 38, 55 (5→8→11→14→17的递增)
+        self.upgrade_thresholds = upgrade_thresholds or [5, 13, 24, 38, 55]
+        self.max_generation_level = len(self.upgrade_thresholds)  # 最大发电等级为5
     
     def get_energy_limit(self) -> int:
         """获取当前电能上限"""
@@ -82,14 +85,24 @@ class EnergySystem:
         self.accumulated_damage += damage
         
         # 检查是否可以提升发电等级
-        new_level = self.accumulated_damage // self.damage_per_level
-        if new_level > self.generation_level:
-            old_level = self.generation_level
+        old_level = self.generation_level
+        new_level = old_level
+        
+        # 检查当前累积伤害应该对应的等级
+        for level in range(self.max_generation_level):
+            if self.accumulated_damage >= self.upgrade_thresholds[level]:
+                new_level = level + 1
+            else:
+                break
+        
+        # 确保不超过最大等级
+        new_level = min(new_level, self.max_generation_level)
+        
+        if new_level > old_level:
             self.generation_level = new_level
             
-            # 发电等级提升时，当前电能也相应增加
-            energy_increase = new_level - old_level
-            self.current_energy = min(self.get_energy_limit(), self.current_energy + energy_increase)
+            # 发电等级提升时，电能恢复至上限
+            self.current_energy = self.get_energy_limit()
             
             return True
         
@@ -106,13 +119,21 @@ class EnergySystem:
         Returns:
             Dict: 包含电能系统详细状态的字典
         """
+        # 计算升级到下一级还需要的伤害
+        damage_to_next_level = 0
+        if self.generation_level < self.max_generation_level:
+            next_threshold = self.upgrade_thresholds[self.generation_level]
+            damage_to_next_level = max(0, next_threshold - self.accumulated_damage)
+        
         return {
             'current_energy': self.current_energy,
             'energy_limit': self.get_energy_limit(),
             'generation_level': self.generation_level,
+            'max_generation_level': self.max_generation_level,
             'accumulated_damage': self.accumulated_damage,
             'action_slots_count': self.get_action_slots_count(),
-            'damage_to_next_level': self.damage_per_level - (self.accumulated_damage % self.damage_per_level)
+            'damage_to_next_level': damage_to_next_level,
+            'at_max_level': self.generation_level >= self.max_generation_level
         }
     
     def to_dict(self) -> Dict[str, Any]:
@@ -128,7 +149,8 @@ class EnergySystem:
             'current_energy': self.current_energy,
             'generation_level': self.generation_level,
             'accumulated_damage': self.accumulated_damage,
-            'damage_per_level': self.damage_per_level
+            'upgrade_thresholds': self.upgrade_thresholds,
+            'max_generation_level': self.max_generation_level
         }
     
     @classmethod
@@ -142,14 +164,17 @@ class EnergySystem:
         Returns:
             EnergySystem: 电能系统实例
         """
+        # 向后兼容：如果是旧格式，使用默认升级阈值
+        upgrade_thresholds = data.get('upgrade_thresholds', [5, 13, 24, 38, 55])
+        
         energy_system = cls(
             base_energy_limit=data.get('base_energy_limit', 3),
-            base_action_slots=data.get('base_action_slots', 1)
+            base_action_slots=data.get('base_action_slots', 1),
+            upgrade_thresholds=upgrade_thresholds
         )
         energy_system.current_energy = data.get('current_energy', energy_system.base_energy_limit)
         energy_system.generation_level = data.get('generation_level', 0)
         energy_system.accumulated_damage = data.get('accumulated_damage', 0)
-        energy_system.damage_per_level = data.get('damage_per_level', 5)
         
         return energy_system
     

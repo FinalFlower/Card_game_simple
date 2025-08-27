@@ -7,12 +7,15 @@ class Liuli(Character):
     """琉璃：受到攻击时1-6随机，6时免疫攻击并反击2点"""
 
     def __init__(self):
+        # 琉璃的反击型发电阈值（较快）：4 -> 7 -> 11 -> 16 -> 22
+        upgrade_thresholds = [4, 11, 22, 38, 60]
+        
         super().__init__(
             name="琉璃",
-            description="受到攻击时进行1-6随机判定，6时免疫并反击2点",
+            description="受到攻击时1-6随机判定，6时免疫并反击2点",
             max_hp=10,
             base_energy_limit=3,  # 基础电能上限
-            damage_per_level=4    # 每4点伤害提升1级（反击型角色，发电更快）
+            upgrade_thresholds=upgrade_thresholds
         )
 
     def on_take_damage(self, damage: int, attacker, game_state) -> Tuple[int, int]:

@@ -82,15 +82,17 @@ class GameEngine:
         for p in all_players:
             for char in p.characters:  # 包括死亡角色，因为buff可能在死亡后仍然存在
                 if char.is_alive:  # 只对正在生存的角色应用buff效果
+                    old_hp = char.current_hp
                     # 应用buff效果（如中毒伤害）
                     buff_results = char.apply_all_buffs(game_state)
                     
                     # 检查buff效果是否导致角色死亡
-                    if not char.is_alive:
+                    if not char.is_alive and old_hp > 0:
                         game_state.add_log(f"{char.name} 因buff效果而死亡！")
                         # 立即检查是否导致游戏结束
                         self.check_game_over(game_state)
                         if game_state.game_over:
+                            # 记录回合结束日志，然后立即返回
                             game_state.add_log(f"玩家{player.id} 回合结束。")
                             return  # 游戏结束，立即返回
                 
@@ -101,6 +103,8 @@ class GameEngine:
         
         # 检查游戏是否结束（如果还未结束的话）
         if not game_state.game_over:
+            # 在回合结束时进行全面的队伍败北检测
+            game_state.add_log("执行回合结束队伍状态检查...")
             self.check_game_over(game_state)
 
     def execute_action(self, game_state: GameState, card_idx: int, user_char_idx: int, target_char_idx: int):
@@ -251,9 +255,31 @@ class GameEngine:
             game_state.add_log(f"{user.name} 对 {target.name} 使用淬毒，但效果施加失败。")
 
     def check_game_over(self, game_state: GameState):
-        if game_state.get_current_player().is_defeated():
+        """
+        检查游戏是否结束：检测双方队伍的被击败情况
+        如果有一方成员均被击败，则直接判定比赛结果
+        """
+        current_player = game_state.get_current_player()
+        opponent_player = game_state.get_opponent_player()
+        
+        # 获取双方存活角色数量
+        current_alive = len(current_player.get_alive_characters())
+        opponent_alive = len(opponent_player.get_alive_characters())
+        
+        # 检查当前玩家是否被击败（所有角色死亡）
+        if current_player.is_defeated():
             game_state.game_over = True
-            game_state.winner = game_state.get_opponent_player().id
-        elif game_state.get_opponent_player().is_defeated():
+            game_state.winner = opponent_player.id
+            game_state.add_log(f"玩家{current_player.id} 队伍全灭！玩家{opponent_player.id} 获胜！")
+            return
+        
+        # 检查对手玩家是否被击败（所有角色死亡）
+        elif opponent_player.is_defeated():
             game_state.game_over = True
-            game_state.winner = game_state.get_current_player().id
+            game_state.winner = current_player.id
+            game_state.add_log(f"玩家{opponent_player.id} 队伍全灭！玩家{current_player.id} 获胜！")
+            return
+        
+        # 双方都有存活成员，游戏继续
+        # 记录当前队伍状态（仅用于调试）
+        game_state.add_log(f"队伍状态检查：玩家{current_player.id}({current_alive}存活) vs 玩家{opponent_player.id}({opponent_alive}存活)")

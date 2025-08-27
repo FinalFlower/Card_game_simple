@@ -5,12 +5,15 @@ class Yangguang(Character):
     """阳光：对方回合没有使用攻击卡时，下回合额外抽取2张卡"""
 
     def __init__(self):
+        # 阳光的辅助型发电阈值（均衡）：5 -> 8 -> 11 -> 14 -> 17
+        upgrade_thresholds = [5, 13, 24, 38, 55]
+        
         super().__init__(
             name="阳光",
             description="对方回合没有使用攻击卡时，下回合额外抽取2张卡",
             max_hp=10,
             base_energy_limit=3,  # 基础电能上限
-            damage_per_level=5    # 每5点伤害提升1级（辅助型角色，均衡发电）
+            upgrade_thresholds=upgrade_thresholds
         )
     
     def on_turn_start(self, game_state, player, engine=None):

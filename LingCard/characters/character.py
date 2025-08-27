@@ -1,4 +1,4 @@
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 from LingCard.core.action_slot import ActionSlot, ActionSlotType, ActionSlotManager
 from LingCard.core.energy_system import EnergySystem
 from LingCard.core.buff_system import BuffManager
@@ -6,7 +6,7 @@ from LingCard.core.buff_system import BuffManager
 class Character:
     """人物卡基类"""
     def __init__(self, name: str, description: str, max_hp: int = 10, 
-                 base_energy_limit: int = 3, damage_per_level: int = 5):
+                 base_energy_limit: int = 3, upgrade_thresholds: Optional[List[int]] = None):
         self.name = name
         self.description = description
         self.max_hp = max_hp
@@ -17,14 +17,14 @@ class Character:
         
         # 电能系统配置（子类可重写）
         self.base_energy_limit = base_energy_limit
-        self.damage_per_level = damage_per_level
+        self.upgrade_thresholds = upgrade_thresholds or [5, 13, 24, 38, 55]  # 默认升级阈值
         
         # 电能系统
         self.energy_system = EnergySystem(
             base_energy_limit=self.base_energy_limit,
-            base_action_slots=1
+            base_action_slots=1,
+            upgrade_thresholds=self.upgrade_thresholds
         )
-        self.energy_system.damage_per_level = self.damage_per_level
         
         # 行动槽系统（使用ActionSlotManager管理多个独立行动槽）
         self.action_slot_manager = ActionSlotManager()
@@ -263,7 +263,7 @@ class Character:
             'action_slots': [slot.to_dict() for slot in self.action_slot_manager.action_slots],
             'energy_system': self.energy_system.to_dict(),
             'base_energy_limit': self.base_energy_limit,
-            'damage_per_level': self.damage_per_level,
+            'upgrade_thresholds': self.upgrade_thresholds,
             'buffs': self.buff_manager.to_dict(),  # 新增：buff数据序列化
         }
     
@@ -286,8 +286,12 @@ class Character:
             instance.energy_system = EnergySystem.from_dict(data['energy_system'])
         if 'base_energy_limit' in data:
             instance.base_energy_limit = data['base_energy_limit']
-        if 'damage_per_level' in data:
-            instance.damage_per_level = data['damage_per_level']
+        if 'upgrade_thresholds' in data:
+            instance.upgrade_thresholds = data['upgrade_thresholds']
+        elif 'damage_per_level' in data:
+            # 向后兼容：从旧的damage_per_level转换为新的升级阈值
+            # 这里使用默认值，实际游戏中可能需要更复杂的转换逻辑
+            instance.upgrade_thresholds = [5, 13, 24, 38, 55]
         
         # 加载行动槽数据（向后兼容）
         if 'action_slots' in data:

@@ -48,9 +48,58 @@ class GameManager:
         print("游戏已退出。")
 
     def _phase_initializing(self):
-        # 此处可以加入加载存档的逻辑
-        self.game_state = GameState(self.state_path)
-        self.phase = GamePhase.MODE_SELECTION
+        """初始化阶段 - 检查是否有存档并询问是否继续"""
+        # 尝试加载存档文件
+        temp_game_state = GameState(self.state_path)
+        
+        # 检查存档文件是否存在且有效
+        if temp_game_state.load(self.all_characters, self.all_cards):
+            # 存档存在，检查游戏状态
+            if temp_game_state.game_over:
+                # 游戏已结束，询问是否开始新游戏
+                self.tui.show_message("检测到已完成的游戏存档。")
+                if self.tui.confirm("要开始新游戏吗？"):
+                    # 删除旧存档，开始新游戏
+                    import os
+                    if os.path.exists(self.state_path):
+                        os.remove(self.state_path)
+                    self.game_state = GameState(self.state_path)
+                    self.phase = GamePhase.MODE_SELECTION
+                else:
+                    # 用户选择不开始新游戏，退出
+                    self.phase = GamePhase.EXIT
+            else:
+                # 游戏进行中，询问是否继续
+                current_round = temp_game_state.current_round
+                self.tui.show_message(f"检测到第{current_round}回合的游戏存档。")
+                if self.tui.confirm("要继续这局游戏吗？"):
+                    # 继续游戏
+                    self.game_state = temp_game_state
+                    
+                    # 根据当前玩家和游戏状态确定下一阶段
+                    current_player = self.game_state.get_current_player()
+                    
+                    # 这里需要从存档中恢复游戏模式信息
+                    # 简单判断：如果玩家2的ID是2且没有手动输入痕迹，可能是AI
+                    if len(self.game_state.players) >= 2 and self.game_state.players[1].id == 2:
+                        # 假设ID为2的玩家是AI（这是一个简化的判断）
+                        self.vs_ai = True
+                    
+                    if self.vs_ai and current_player.id == 2:
+                        self.phase = GamePhase.AI_TURN
+                    else:
+                        self.phase = GamePhase.PLAYER_TURN
+                else:
+                    # 用户选择不继续，开始新游戏
+                    import os
+                    if os.path.exists(self.state_path):
+                        os.remove(self.state_path)
+                    self.game_state = GameState(self.state_path)
+                    self.phase = GamePhase.MODE_SELECTION
+        else:
+            # 没有有效存档，开始新游戏
+            self.game_state = GameState(self.state_path)
+            self.phase = GamePhase.MODE_SELECTION
 
     def _phase_mode_selection(self):
         choice = self.tui.select_from_list("请选择游戏模式", ["玩家 vs 玩家", "玩家 vs AI"])
@@ -292,6 +341,14 @@ class GameManager:
 
     def _phase_turn_end(self):
         self.engine.process_turn_end(self.game_state)
+        
+        # 检查游戏是否在回合结束时结束（例如因buff效果导致的队伍全灭）
+        if self.game_state.game_over:
+            self.game_state.add_log("回合结束时检测到游戏结束，进入结束阶段")
+            self.phase = GamePhase.GAME_OVER
+            return
+        
+        # 游戏继续，切换到下一回合
         self.game_state.switch_turn()
         self.engine.process_turn_start(self.game_state)
         self.game_state.save()
