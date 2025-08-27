@@ -2,8 +2,22 @@ from blessed import Terminal
 
 def get_text_width(text):
     """获取文本在终端中的实际宽度（中文字符占两个位置）"""
+    if not text:
+        return 0
+    
     width = 0
-    for char in text:
+    i = 0
+    while i < len(text):
+        char = text[i]
+        # 跳过ANSI颜色控制序列
+        if char == '\x1b' and i + 1 < len(text) and text[i + 1] == '[':
+            # 查找ANSI序列的结束
+            j = i + 2
+            while j < len(text) and text[j] not in 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz':
+                j += 1
+            i = j + 1  # 跳过整个ANSI序列
+            continue
+        
         # 中文字符、日文、韩文等东亚字符占两个宽度
         if ord(char) >= 0x4e00 and ord(char) <= 0x9fff:  # 中文汉字范围
             width += 2
@@ -15,6 +29,7 @@ def get_text_width(text):
             width += 2
         else:
             width += 1
+        i += 1
     return width
 
 def safe_center_text(term: Terminal, text):
@@ -82,43 +97,50 @@ def draw_player_info_left(term: Terminal, player, is_opponent: bool, width: int,
     if get_text_width(header) > width:
         header = header[:width-3] + "..."
     
-    print(header)
+    print(header + term.normal)  # 确保颜色重置
     lines_used = 1
     
     # 显示角色信息，每个角色一行
-    for i, char in enumerate(player.characters):
+    for idx, char in enumerate(player.characters):
+        # 基本信息（优先级最高）
         status = term.red("倒下") if not char.is_alive else term.green("存活")
+        basic_info = f"  {idx+1}. {char.name} [{char.current_hp}/{char.max_hp} HP] {status}"
+        
+        # 防御信息
         defense = f" (防:{char.defense_buff})" if char.defense_buff > 0 else ""
         
-        # 显示行动槽状态（每个行动槽独立显示）
+        # 行动槽状态（次优先级）
         action_status = ""
-        if hasattr(char, 'action_slot_manager') and char.is_alive:
+        if hasattr(char, 'action_slot_manager'):
             slot_status = char.get_action_slot_status()
             total_slots = slot_status['total_slots']
-            available_slots = slot_status['available_slots']
             used_slots = slot_status['used_slots']
             
-            # 生成行动槽显示字符串：[●●○] 表示 2个已使用，1个可用
+            # 生成行动槽显示字符串
             slot_icons = []
             for i in range(total_slots):
-                if i < used_slots:
-                    slot_icons.append(term.red('●'))  # 已使用（红色实心圆）
+                if not char.is_alive:
+                    slot_icons.append(term.black('●'))
+                elif i < used_slots:
+                    slot_icons.append(term.red('●'))
                 else:
-                    slot_icons.append(term.green('○'))  # 可用（绿色空心圆）
+                    slot_icons.append(term.green('○'))
             
             slot_display = ''.join(slot_icons)
-            action_status = f" [{slot_display}]"
+            action_status = f" [{slot_display}{term.normal}]"
         
-        # 显示电能状态
+        # 电能状态（最高优先级，不能被截断）
         energy_status = ""
-        if hasattr(char, 'energy_system') and char.is_alive:
+        if hasattr(char, 'energy_system'):
             energy_info = char.get_energy_status()
             current_energy = energy_info['current_energy']
             energy_limit = energy_info['energy_limit']
             generation_level = energy_info['generation_level']
             
-            # 电能显示颜色：绿色(充足)、黄色(中等)、红色(低)
-            if current_energy >= energy_limit * 0.7:
+            # 电能显示颜色
+            if not char.is_alive:
+                energy_color = term.black
+            elif current_energy >= energy_limit * 0.7:
                 energy_color = term.green
             elif current_energy >= energy_limit * 0.3:
                 energy_color = term.yellow
@@ -129,18 +151,48 @@ def draw_player_info_left(term: Terminal, player, is_opponent: bool, width: int,
             if generation_level > 0:
                 energy_text += f" Lv{generation_level}"
             
-            energy_status = f" {energy_color(energy_text)}"
+            energy_status = f" {energy_color(energy_text)}{term.normal}"
         
-        char_info = f"  {i+1}. {char.name} [{char.current_hp}/{char.max_hp} HP] {status}{defense}{action_status}{energy_status}"
+        # 智能组合信息，确保重要信息不被截断
+        char_info = smart_combine_char_info(
+            basic_info, defense, action_status, energy_status, width, term
+        )
         
-        # 截断过长的角色信息
-        if get_text_width(char_info) > width:
-            char_info = char_info[:width-3] + "..."
-        
-        print(char_info)
+        print(char_info + term.normal)  # 确保每行结束后重置颜色
         lines_used += 1
     
     return lines_used
+
+def smart_combine_char_info(basic_info, defense, action_status, energy_status, width, term):
+    """智能组合角色信息，确保重要信息不被截断"""
+    # 电能信息和行动槽是最重要的，必须保留
+    essential_info = basic_info + energy_status + action_status
+    essential_width = get_text_width(essential_info)
+    
+    # 如果基本信息 + 重要信息能放下
+    if essential_width <= width:
+        # 尝试加入防御信息
+        full_info = basic_info + defense + action_status + energy_status
+        if get_text_width(full_info) <= width:
+            return full_info
+        else:
+            return essential_info
+    else:
+        # 空间不足，需要缩短角色名字
+        # 先缩短角色名字
+        parts = basic_info.split(' ')
+        if len(parts) >= 3:  # 编号、名字、HP信息
+            char_name = parts[1]
+            if len(char_name) > 4:  # 如果名字过长，缩短为2个字符+..
+                short_name = char_name[:2] + ".."
+                shortened_basic = basic_info.replace(char_name, short_name)
+                test_info = shortened_basic + energy_status + action_status
+                if get_text_width(test_info) <= width:
+                    return test_info
+        
+        # 如果还是太长，只保留最关键的信息
+        # 优先保留电能和生命值信息
+        return basic_info[:width-len(energy_status)-3] + ".." + energy_status
 
 def wrap_text(text: str, width: int) -> list:
     """将文本按指定宽度进行换行，考虑中文字符宽度"""
@@ -219,27 +271,32 @@ def draw_log_sidebar(term: Terminal, game_state, log_width: int, log_x: int, max
                 print(log_line)
 
 def draw_selection(term: Terminal, prompt: str, options: list, selected_index: int, layout_info=None):
-    """绘制选择列表，适应左右分栏布局"""
+    """绘制选择列表，适应左右分栏布局，确保在角色属性下方显示"""
     if layout_info is None:
         # 回退到旧的定位方式
         start_y = max(3, term.height - len(options) - 5)
         max_width = term.width
     else:
-        # 使用新的分栏布局
-        needed_lines = len(options) + 3  # 选项 + 提示 + 空行
-        available_lines = layout_info['available_lines']
+        # 使用新的分栏布局，确保在角色属性下方
+        needed_lines = len(options) + 4  # 选项 + 提示 + 空行 + 缓冲
         max_width = layout_info.get('main_width', term.width)
         
-        if needed_lines <= available_lines:
-            # 有足够空间，在底部显示
-            start_y = layout_info['used_lines'] + 1
+        # 算出角色信息区域的结束位置
+        base_start_y = layout_info['used_lines'] + 2  # 在角色信息后留出2行缓冲
+        
+        # 检查是否会超出屏幕范围
+        max_possible_y = term.height - needed_lines - 2  # 预留底部空间
+        
+        if base_start_y <= max_possible_y:
+            # 有足够空间，在角色信息下方显示
+            start_y = base_start_y
         else:
-            # 空间不足，在中间显示
-            start_y = max(5, (term.height - needed_lines) // 2)
+            # 空间不足，在中间位置显示，但不要覆盖角色信息
+            start_y = min(base_start_y, max(layout_info['used_lines'] + 1, max_possible_y))
     
     # 绘制选择菜单（只在左侧区域）
     with term.location(y=start_y):
-        print("\n" + prompt)
+        print("\n" + prompt + term.normal)  # 重置颜色
         print()  # 空行
         
         for i, option in enumerate(options):
@@ -249,6 +306,6 @@ def draw_selection(term: Terminal, prompt: str, options: list, selected_index: i
                 display_option = option[:max_width-7] + "..."
             
             if i == selected_index:
-                print(term.black_on_white(f"> {display_option}"))
+                print(term.black_on_white(f"> {display_option}") + term.normal)
             else:
-                print(f"  {display_option}")
+                print(f"  {display_option}" + term.normal)
