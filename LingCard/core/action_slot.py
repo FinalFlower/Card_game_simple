@@ -39,7 +39,7 @@ class ActionSlot:
         Returns:
             bool: 如果可以使用返回True，否则返回False
         """
-        return self.remaining_uses > 0 and not self.used_this_turn
+        return self.remaining_uses > 0
     
     def use_slot(self) -> bool:
         """
@@ -52,6 +52,7 @@ class ActionSlot:
             return False
         
         self.remaining_uses -= 1
+        # 只要使用过一次就标记为True，但不影响后续使用
         self.used_this_turn = True
         return True
     

@@ -42,12 +42,13 @@ class GameEngine:
         # 重置回合状态
         player.status['used_attack_this_turn'] = False
         
-        # 重置所有角色的行动槽（在回合开始时）
+        # 重置所有角色的状态（包括电能和行动槽）
         for char in player.characters:
             if char.is_alive:
-                char.action_slot.reset_turn()
+                # 调用Character的reset_turn_status方法，它会处理电能和行动槽重置
+                char.reset_turn_status()
         
-        game_state.add_log(f"玩家{player.id} 的所有角色行动槽已重置")
+        game_state.add_log(f"玩家{player.id} 的所有角色电能和行动槽已重置")
         
         # 基础抽卡
         cards_to_draw = self.config['game_settings']['initial_hand_size']
@@ -97,8 +98,25 @@ class GameEngine:
             game_state.add_log(f"错误：无效的手牌索引")
             return False
 
+        card = player.hand[card_idx]  # 暂时不移除，等通过所有验证再移除
+        
+        # 检查电能是否足够
+        if not card.can_use(user_char):
+            energy_status = user_char.get_energy_status()
+            game_state.add_log(f"错误：{user_char.name} 电能不足！当前电能：{energy_status['current_energy']}/{energy_status['energy_limit']}，需要：{card.energy_cost}")
+            return False
+        
+        # 通过所有验证，现在实际执行行动
         card = player.hand.pop(card_idx)
         player.discard_pile.append(card)
+        
+        # 消耗电能
+        if not user_char.consume_energy(card.energy_cost):
+            # 这里不应该发生，因为我们已经检查过了
+            game_state.add_log(f"内部错误：无法消耗{user_char.name}的电能")
+            return False
+        
+        game_state.add_log(f"{user_char.name} 消耗 {card.energy_cost} 点电能使用 {card.name}")
         
         # 使用行动槽
         if not user_char.try_use_action_slot():
@@ -141,7 +159,7 @@ class GameEngine:
             damage += 1
             game_state.add_log("队伍效果[俊琉璃]触发，伤害+1")
         
-        # 攻击者技能钩子
+        # 攻击者技能钩子（但不在这里累积伤害）
         damage = attacker.on_deal_damage(damage, game_state)
         
         # 目标技能钩子
@@ -150,10 +168,17 @@ class GameEngine:
         # 造成伤害
         actual_damage = target.take_damage(adjusted_damage)
         game_state.add_log(f"{attacker.name} 对 {target.name} 使用攻击，造成 {actual_damage} 点伤害。")
+        
+        # 使用实际造成的伤害来累积发电等级（覆盖on_deal_damage中的累积）
+        if actual_damage > 0:
+            attacker.add_damage_to_generation(actual_damage, game_state)
 
         if counter_damage > 0:
-            attacker.take_damage(counter_damage)
+            counter_actual_damage = attacker.take_damage(counter_damage)
             game_state.add_log(f"{target.name} 反击 {attacker.name}，造成 {counter_damage} 点伤害。")
+            # 反击伤害也应该累积到反击者的发电系统
+            if counter_actual_damage > 0:
+                target.add_damage_to_generation(counter_actual_damage, game_state)
 
     def _execute_heal(self, game_state, user, card, target):
         heal_amount = card.get_base_value()

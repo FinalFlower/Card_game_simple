@@ -8,7 +8,9 @@ class Yangguang(Character):
         super().__init__(
             name="阳光",
             description="对方回合没有使用攻击卡时，下回合额外抽取2张卡",
-            max_hp=10
+            max_hp=10,
+            base_energy_limit=3,  # 基础电能上限
+            damage_per_level=5    # 每5点伤害提升1级（辅助型角色，均衡发电）
         )
     
     def on_turn_start(self, game_state, player, engine=None):

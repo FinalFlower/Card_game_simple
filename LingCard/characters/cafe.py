@@ -8,7 +8,9 @@ class Cafe(Character):
         super().__init__(
             name="Cafe",
             description="每回合第一次造成伤害时伤害加1",
-            max_hp=10
+            max_hp=10,
+            base_energy_limit=3,  # 基础电能上限
+            damage_per_level=5    # 每5点伤害提升1级发电等级
         )
         # 初始化技能状态
         self.status['first_damage_dealt_this_turn'] = False

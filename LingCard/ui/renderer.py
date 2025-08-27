@@ -90,15 +90,48 @@ def draw_player_info_left(term: Terminal, player, is_opponent: bool, width: int,
         status = term.red("倒下") if not char.is_alive else term.green("存活")
         defense = f" (防:{char.defense_buff})" if char.defense_buff > 0 else ""
         
-        # 显示行动槽状态
+        # 显示行动槽状态（每个行动槽独立显示）
         action_status = ""
-        if hasattr(char, 'action_slot') and char.is_alive:
-            if char.action_slot.can_use():
-                action_status = f" {term.yellow('✓可行动')}"
-            else:
-                action_status = f" {term.red('✗已行动')}"
+        if hasattr(char, 'action_slot_manager') and char.is_alive:
+            slot_status = char.get_action_slot_status()
+            total_slots = slot_status['total_slots']
+            available_slots = slot_status['available_slots']
+            used_slots = slot_status['used_slots']
+            
+            # 生成行动槽显示字符串：[●●○] 表示 2个已使用，1个可用
+            slot_icons = []
+            for i in range(total_slots):
+                if i < used_slots:
+                    slot_icons.append(term.red('●'))  # 已使用（红色实心圆）
+                else:
+                    slot_icons.append(term.green('○'))  # 可用（绿色空心圆）
+            
+            slot_display = ''.join(slot_icons)
+            action_status = f" [{slot_display}]"
         
-        char_info = f"  {i+1}. {char.name} [{char.current_hp}/{char.max_hp} HP] {status}{defense}{action_status}"
+        # 显示电能状态
+        energy_status = ""
+        if hasattr(char, 'energy_system') and char.is_alive:
+            energy_info = char.get_energy_status()
+            current_energy = energy_info['current_energy']
+            energy_limit = energy_info['energy_limit']
+            generation_level = energy_info['generation_level']
+            
+            # 电能显示颜色：绿色(充足)、黄色(中等)、红色(低)
+            if current_energy >= energy_limit * 0.7:
+                energy_color = term.green
+            elif current_energy >= energy_limit * 0.3:
+                energy_color = term.yellow
+            else:
+                energy_color = term.red
+            
+            energy_text = f"电能:{current_energy}/{energy_limit}"
+            if generation_level > 0:
+                energy_text += f" Lv{generation_level}"
+            
+            energy_status = f" {energy_color(energy_text)}"
+        
+        char_info = f"  {i+1}. {char.name} [{char.current_hp}/{char.max_hp} HP] {status}{defense}{action_status}{energy_status}"
         
         # 截断过长的角色信息
         if get_text_width(char_info) > width:

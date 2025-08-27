@@ -10,7 +10,9 @@ class Liuli(Character):
         super().__init__(
             name="琉璃",
             description="受到攻击时进行1-6随机判定，6时免疫并反击2点",
-            max_hp=10
+            max_hp=10,
+            base_energy_limit=3,  # 基础电能上限
+            damage_per_level=4    # 每4点伤害提升1级（反击型角色，发电更快）
         )
 
     def on_take_damage(self, damage: int, attacker, game_state) -> Tuple[int, int]:

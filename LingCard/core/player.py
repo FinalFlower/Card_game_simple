@@ -46,7 +46,9 @@ class Player:
         """
         for char in self.characters:
             if char.is_alive:
-                char.action_slot.reset_turn()
+                # 使用新的ActionSlotManager系统
+                if hasattr(char, 'action_slot_manager'):
+                    char.action_slot_manager.reset_all_slots()
     
     def get_action_slots_summary(self) -> Dict[str, Any]:
         """
@@ -66,8 +68,13 @@ class Player:
             char_info = {
                 'name': char.name,
                 'is_alive': char.is_alive,
-                'action_slot_status': char.get_action_slot_status() if char.is_alive else None
+                'action_slot_status': None
             }
+            
+            if char.is_alive:
+                # 使用新的get_action_slot_status方法
+                char_info['action_slot_status'] = char.get_action_slot_status()
+            
             summary['character_details'].append(char_info)
         
         return summary

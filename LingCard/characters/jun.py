@@ -9,7 +9,9 @@ class Jun(Character):
         super().__init__(
             name="俊",
             description="可以帮队友承受伤害（每回合一次），前两次伤害减1",
-            max_hp=10
+            max_hp=10,
+            base_energy_limit=3,  # 基础电能上限
+            damage_per_level=6    # 每6点伤害提升1级（守护型角色，更难发电）
         )
         self.status['damage_taken_count_this_turn'] = 0
         self.status['has_protected_teammate_this_turn'] = False

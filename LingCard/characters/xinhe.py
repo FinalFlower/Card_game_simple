@@ -8,7 +8,9 @@ class Xinhe(Character):
         super().__init__(
             name="星河",
             description="每回合不使用技能时抽取一个行动卡",
-            max_hp=10
+            max_hp=10,
+            base_energy_limit=3,  # 基础电能上限
+            damage_per_level=5    # 每5点伤害提升1级（辅助型角色，均衡发电）
         )
         self.status['used_card_this_turn'] = False
 
