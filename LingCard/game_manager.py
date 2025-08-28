@@ -9,6 +9,7 @@ from LingCard.core.game_state import GameState
 from LingCard.core.player import Player
 from LingCard.core.game_engine import GameEngine
 from LingCard.utils.loader import load_characters, load_cards
+from LingCard.utils.deck_config_manager import get_deck_config_manager
 from LingCard.ui.tui import TUI
 
 class GameManager:
@@ -135,19 +136,14 @@ class GameManager:
         """配卡界面阶段 - 实现直观的牌库配置功能"""
         # 创建一个临时玩家用于配卡
         temp_player = Player(1)
+        deck_manager = get_deck_config_manager()
         
         # 初始化默认配置（如果玩家没有自定义配置）
         saved_config = self._load_deck_config()
         if saved_config:
             temp_player.set_custom_deck_config(saved_config)
         else:
-            default_config = {
-                'AttackCard': 3,
-                'HealCard': 2,
-                'DefendCard': 3,
-                'PoisonCard': 1,
-                'DrawTestCard': 1
-            }
+            default_config = deck_manager.get_default_deck_config()
             temp_player.set_custom_deck_config(default_config)
         
         while True:
@@ -224,14 +220,8 @@ class GameManager:
     
     def _get_card_display_name(self, card_class_name: str) -> str:
         """获取卡牌的显示名称"""
-        display_names = {
-            'AttackCard': '攻击卡',
-            'HealCard': '治疗卡', 
-            'DefendCard': '防御卡',
-            'PoisonCard': '混毒卡',
-            'DrawTestCard': '抽卡测试'
-        }
-        return display_names.get(card_class_name, card_class_name)
+        deck_manager = get_deck_config_manager()
+        return deck_manager.get_card_display_name(card_class_name)
     
     def _deck_builder_remove_mode(self, player: Player):
         """配卡界面 - 移除卡牌模式"""
@@ -289,12 +279,16 @@ class GameManager:
     
     def _save_deck_config(self, config: Dict[str, int]):
         """保存牌库配置到文件"""
-        # 简化实现：保存到全局变量
-        self.global_deck_config = config
+        deck_manager = get_deck_config_manager()
+        success = deck_manager.save_deck_config("player1", config)
+        if not success:
+            self.tui.show_message("配置保存失败！")
     
     def _load_deck_config(self) -> Dict[str, int]:
         """加载保存的牌库配置"""
-        return getattr(self, 'global_deck_config', {})
+        deck_manager = get_deck_config_manager()
+        config = deck_manager.load_deck_config("player1")
+        return config if config else {}
 
     def _phase_mode_selection(self):
         choice = self.tui.select_from_list("请选择游戏模式", ["玩家 vs 玩家", "玩家 vs AI"])
@@ -315,6 +309,8 @@ class GameManager:
         
         # 应用保存的配卡配置到玩家（如果有）
         saved_config = self._load_deck_config()
+        deck_manager = get_deck_config_manager()
+        
         if saved_config:
             try:
                 # 为玩家1应用配卡配置
@@ -322,6 +318,18 @@ class GameManager:
                 self.tui.show_message("已应用保存的配卡配置")
             except ValueError as e:
                 self.tui.show_message(f"配卡配置无效：{e}")
+                # 如果保存的配置无效，使用默认配置
+                default_config = deck_manager.get_default_deck_config()
+                self.game_state.players[0].set_custom_deck_config(default_config)
+        else:
+            # 没有保存的配置，使用默认配置
+            default_config = deck_manager.get_default_deck_config()
+            self.game_state.players[0].set_custom_deck_config(default_config)
+        
+        # 为AI玩家设置默认配置
+        if self.vs_ai and len(self.game_state.players) >= 2:
+            ai_config = deck_manager.get_default_deck_config()
+            self.game_state.players[1].set_custom_deck_config(ai_config)
             
         # 初始化牌库和队伍效果
         for player in self.game_state.players:

@@ -10,7 +10,7 @@ class GameEngine:
         self.config = config
 
     def initialize_player_deck(self, player, card_classes):
-        """根据配置初始化牌库"""
+        """根据配置初始化牌库 - 现在强制要求使用自定义配置"""
         deck = []
         
         # 检查玩家是否有自定义牌库配置
@@ -24,12 +24,19 @@ class GameEngine:
                 else:
                     print(f"警告：未知的卡牌类型 {card_name}，已跳过")
         else:
-            # 使用默认配置
-            for card_name, count in self.config['game_settings']['deck_composition'].items():
+            # 现在不再使用默认配置，强制要求自定义配置
+            from LingCard.utils.deck_config_manager import get_deck_config_manager
+            deck_manager = get_deck_config_manager()
+            default_config = deck_manager.get_default_deck_config()
+            
+            print(f"警告：玩家{player.id}没有自定义配卡，使用默认配置")
+            for card_name, count in default_config.items():
                 if card_name in card_classes:
                     card_class = card_classes[card_name]
                     for _ in range(count):
                         deck.append(card_class())
+                else:
+                    print(f"警告：未知的卡牌类型 {card_name}，已跳过")
         
         random.shuffle(deck)
         player.deck = deck
@@ -69,6 +76,15 @@ class GameEngine:
         
         # 重置回合状态
         player.status['used_attack_this_turn'] = False
+        
+        # 在回合开始时处理弃牌堆回收
+        if player.discard_pile:
+            # 将弃牌堆的卡牌重新洗牌回牌库
+            player.deck.extend(player.discard_pile)
+            random.shuffle(player.deck)
+            discard_count = len(player.discard_pile)
+            player.discard_pile = []  # 清空弃牌堆
+            game_state.add_log(f"玩家{player.id} 将{discard_count}张弃牌重新洗牌回牌库")
         
         # 重置所有角色的状态（包括电能和行动槽）
         for char in player.characters:
