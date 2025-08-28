@@ -4,6 +4,8 @@ from enum import Enum
 class GamePhase(Enum):
     """游戏状态机阶段"""
     INITIALIZING = "初始化"
+    LOBBY = "大厅"
+    DECK_BUILDER = "配卡界面"
     MODE_SELECTION = "模式选择"
     CHARACTER_SELECTION = "角色选择"
     GAME_LOOP = "游戏主循环"
@@ -19,6 +21,7 @@ class ActionType(Enum):
     HEAL = "回血"
     DEFEND = "防御"
     POISON = "毒素"  # 新增：毒素类型，用于施加中毒等debuff
+    SPECIAL = "特殊"  # 新增：特殊类型，用于特殊效果卡牌
 
 class TeamEffect(Enum):
     """特殊队伍效果枚举"""

@@ -13,6 +13,10 @@ class Player:
         self.discard_pile: List[ActionCard] = []
         self.team_effects: List[TeamEffect] = []
         self.status: Dict[str, Any] = {}  # 用于存储玩家状态信息
+        
+        # 新增：自定义牌库配置
+        self.custom_deck_config: Dict[str, int] = {}  # 存储自定义牌库配置 {卡牌名称: 数量}
+        self.has_custom_deck: bool = False  # 是否使用自定义牌库
 
     def is_defeated(self) -> bool:
         return all(not char.is_alive for char in self.characters)
@@ -78,6 +82,93 @@ class Player:
             summary['character_details'].append(char_info)
         
         return summary
+    
+    # --- 牌库配置系统相关方法 ---
+    
+    def set_custom_deck_config(self, deck_config: Dict[str, int]):
+        """
+        设置自定义牌库配置
+        
+        Args:
+            deck_config: 卡牌配置字典 {卡牌名称: 数量}
+        """
+        total_cards = sum(deck_config.values())
+        if total_cards != 10:
+            raise ValueError(f"牌库必须包含恰好10张卡，当前有{total_cards}张")
+        
+        self.custom_deck_config = deck_config.copy()
+        self.has_custom_deck = True
+    
+    def get_deck_config(self) -> Dict[str, int]:
+        """
+        获取牌库配置
+        
+        Returns:
+            Dict[str, int]: 卡牌配置字典
+        """
+        return self.custom_deck_config.copy() if self.has_custom_deck else {}
+    
+    def clear_deck_config(self):
+        """
+        清除自定义牌库配置，恢复为默认配置
+        """
+        self.custom_deck_config = {}
+        self.has_custom_deck = False
+    
+    def get_available_deck_space(self) -> int:
+        """
+        获取牌库剩余空间
+        
+        Returns:
+            int: 剩余可添加的卡牌数量
+        """
+        current_total = sum(self.custom_deck_config.values())
+        return max(0, 10 - current_total)
+    
+    def add_card_to_deck_config(self, card_name: str, count: int = 1) -> bool:
+        """
+        向自定义牌库中添加卡牌
+        
+        Args:
+            card_name: 卡牌名称
+            count: 添加数量
+            
+        Returns:
+            bool: 是否添加成功
+        """
+        if self.get_available_deck_space() < count:
+            return False
+        
+        if card_name in self.custom_deck_config:
+            self.custom_deck_config[card_name] += count
+        else:
+            self.custom_deck_config[card_name] = count
+        
+        self.has_custom_deck = True
+        return True
+    
+    def remove_card_from_deck_config(self, card_name: str, count: int = 1) -> bool:
+        """
+        从自定义牌库中移除卡牌
+        
+        Args:
+            card_name: 卡牌名称
+            count: 移除数量
+            
+        Returns:
+            bool: 是否移除成功
+        """
+        if card_name not in self.custom_deck_config:
+            return False
+        
+        if self.custom_deck_config[card_name] < count:
+            return False
+        
+        self.custom_deck_config[card_name] -= count
+        if self.custom_deck_config[card_name] == 0:
+            del self.custom_deck_config[card_name]
+        
+        return True
 
     def to_dict(self):
         return {
@@ -88,6 +179,8 @@ class Player:
             'discard_pile': [card.to_dict() for card in self.discard_pile],
             'team_effects': [effect.name for effect in self.team_effects],
             'status': self.status,
+            'custom_deck_config': self.custom_deck_config,
+            'has_custom_deck': self.has_custom_deck
         }
 
     @classmethod
@@ -99,4 +192,6 @@ class Player:
         player.discard_pile = [ActionCard.from_dict(cd, all_card_classes) for cd in data['discard_pile']]
         player.team_effects = [TeamEffect[name] for name in data['team_effects']]
         player.status = data.get('status', {})
+        player.custom_deck_config = data.get('custom_deck_config', {})
+        player.has_custom_deck = data.get('has_custom_deck', False)
         return player

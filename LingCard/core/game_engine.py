@@ -12,23 +12,51 @@ class GameEngine:
     def initialize_player_deck(self, player, card_classes):
         """根据配置初始化牌库"""
         deck = []
-        for card_name, count in self.config['game_settings']['deck_composition'].items():
-            card_class = card_classes[card_name]
-            for _ in range(count):
-                deck.append(card_class())
+        
+        # 检查玩家是否有自定义牌库配置
+        if player.has_custom_deck and player.custom_deck_config:
+            # 使用玩家自定义的牌库配置
+            for card_name, count in player.custom_deck_config.items():
+                if card_name in card_classes:
+                    card_class = card_classes[card_name]
+                    for _ in range(count):
+                        deck.append(card_class())
+                else:
+                    print(f"警告：未知的卡牌类型 {card_name}，已跳过")
+        else:
+            # 使用默认配置
+            for card_name, count in self.config['game_settings']['deck_composition'].items():
+                if card_name in card_classes:
+                    card_class = card_classes[card_name]
+                    for _ in range(count):
+                        deck.append(card_class())
+        
         random.shuffle(deck)
         player.deck = deck
 
     def draw_cards(self, player, count):
-        """为玩家抽牌"""
+        """为玩家抽牌 - 优先从牌库抽取，牌库为空时从弃牌堆重新洗牌"""
+        drawn_count = 0
         for _ in range(count):
+            # 如果牌库为空但弃牌堆有牌，将弃牌堆洗牌后作为新牌库
             if not player.deck and player.discard_pile:
-                player.deck = player.discard_pile
+                player.deck = player.discard_pile[:]
                 player.discard_pile = []
                 random.shuffle(player.deck)
+                # 添加日志信息
+                if hasattr(player, 'game_state'):
+                    player.game_state.add_log(f"玩家{player.id} 牌库为空，将弃牌堆洗牌后作为新牌库")
 
+            # 从牌库抽牌
             if player.deck:
-                player.hand.append(player.deck.pop())
+                card = player.deck.pop()
+                player.hand.append(card)
+                drawn_count += 1
+            else:
+                # 牌库和弃牌堆都为空，无法抽牌
+                break
+        
+        return drawn_count
     
     def check_team_effects(self, player):
         char_names = {char.__class__.__name__ for char in player.characters}
@@ -50,8 +78,20 @@ class GameEngine:
         
         game_state.add_log(f"玩家{player.id} 的所有角色电能和行动槽已重置")
         
-        # 基础抽卡
-        cards_to_draw = self.config['game_settings']['initial_hand_size']
+        # 基础抽卡（现在改为1张）
+        cards_to_draw = 1
+        
+        # 处理抽卡测试卡的延迟抽卡效果
+        total_extra_draw = 0
+        for char in player.get_alive_characters():
+            if 'next_turn_draw' in char.status and char.status['next_turn_draw'] > 0:
+                extra_draw = char.status['next_turn_draw']
+                total_extra_draw += extra_draw
+                game_state.add_log(f"{char.name} 的抽卡测试效果触发，额外抽取{extra_draw}张卡")
+                # 清除效果
+                char.status['next_turn_draw'] = 0
+        
+        cards_to_draw += total_extra_draw
         
         # 队伍效果
         if TeamEffect.CAFE_XINHE in player.team_effects:
@@ -187,6 +227,9 @@ class GameEngine:
                 return False
             target_char = opponent_alive[target_char_idx]
             self._execute_poison(game_state, user_char, card, target_char)
+        elif card.action_type == ActionType.SPECIAL:
+            # 处理特殊类型卡牌（如抽卡测试）
+            self._execute_special(game_state, user_char, card)
             
         self.check_game_over(game_state)
         return True
@@ -253,6 +296,21 @@ class GameEngine:
             game_state.add_log(f"{user.name} 对 {target.name} 使用淬毒，施加 {poison_stacks} 层中毒效果。")
         else:
             game_state.add_log(f"{user.name} 对 {target.name} 使用淬毒，但效果施加失败。")
+
+    def _execute_special(self, game_state, user, card):
+        """
+        执行特殊类型卡牌效果
+        
+        Args:
+            game_state: 游戏状态
+            user: 使用者
+            card: 特殊卡牌
+        """
+        # 调用卡牌自身的apply_effect方法
+        if hasattr(card, 'apply_effect'):
+            card.apply_effect(game_state, user)
+        else:
+            game_state.add_log(f"{user.name} 使用了 {card.name}，但没有实现效果")
 
     def check_game_over(self, game_state: GameState):
         """

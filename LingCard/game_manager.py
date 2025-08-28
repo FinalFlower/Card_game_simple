@@ -2,6 +2,7 @@
 import yaml
 import random
 import time
+from typing import Dict
 from LingCard.utils.enums import GamePhase, ActionType
 from LingCard.core.buff_system import BuffType
 from LingCard.core.game_state import GameState
@@ -30,6 +31,10 @@ class GameManager:
         while self.phase != GamePhase.EXIT:
             if self.phase == GamePhase.INITIALIZING:
                 self._phase_initializing()
+            elif self.phase == GamePhase.LOBBY:
+                self._phase_lobby()
+            elif self.phase == GamePhase.DECK_BUILDER:
+                self._phase_deck_builder()
             elif self.phase == GamePhase.MODE_SELECTION:
                 self._phase_mode_selection()
             elif self.phase == GamePhase.CHARACTER_SELECTION:
@@ -64,7 +69,7 @@ class GameManager:
                     if os.path.exists(self.state_path):
                         os.remove(self.state_path)
                     self.game_state = GameState(self.state_path)
-                    self.phase = GamePhase.MODE_SELECTION
+                    self.phase = GamePhase.LOBBY
                 else:
                     # 用户选择不开始新游戏，退出
                     self.phase = GamePhase.EXIT
@@ -95,11 +100,201 @@ class GameManager:
                     if os.path.exists(self.state_path):
                         os.remove(self.state_path)
                     self.game_state = GameState(self.state_path)
-                    self.phase = GamePhase.MODE_SELECTION
+                    self.phase = GamePhase.LOBBY
         else:
             # 没有有效存档，开始新游戏
             self.game_state = GameState(self.state_path)
+            self.phase = GamePhase.LOBBY
+
+    def _phase_lobby(self):
+        """大厅阶段 - 显示主菜单"""
+        self.tui.clear_screen()
+        
+        # 显示游戏标题
+        title = "=== LingCard 卡牌对战遊戏 ==="
+        self.tui.safe_print(title)
+        self.tui.safe_print("")  # 空行
+        
+        # 主菜单选项
+        lobby_options = [
+            "开始游戏",
+            "配卡界面",
+            "退出游戏"
+        ]
+        
+        choice = self.tui.select_from_list("请选择操作", lobby_options)
+        
+        if choice == 0:  # 开始游戏
             self.phase = GamePhase.MODE_SELECTION
+        elif choice == 1:  # 配卡界面
+            self.phase = GamePhase.DECK_BUILDER
+        elif choice == 2 or choice == -1:  # 退出游戏或ESC
+            self.phase = GamePhase.EXIT
+    
+    def _phase_deck_builder(self):
+        """配卡界面阶段 - 实现直观的牌库配置功能"""
+        # 创建一个临时玩家用于配卡
+        temp_player = Player(1)
+        
+        # 初始化默认配置（如果玩家没有自定义配置）
+        saved_config = self._load_deck_config()
+        if saved_config:
+            temp_player.set_custom_deck_config(saved_config)
+        else:
+            default_config = {
+                'AttackCard': 3,
+                'HealCard': 2,
+                'DefendCard': 3,
+                'PoisonCard': 1,
+                'DrawTestCard': 1
+            }
+            temp_player.set_custom_deck_config(default_config)
+        
+        while True:
+            self.tui.clear_screen()
+            
+            # 显示标题
+            title = "=== 配卡界面 ==="
+            self.tui.safe_print(title)
+            self.tui.safe_print("")
+            
+            # 显示当前牌库配置
+            current_config = temp_player.get_deck_config()
+            total_cards = sum(current_config.values())
+            
+            self.tui.safe_print(f"当前牌库（{total_cards}/10张）：")
+            if current_config:
+                for card_name, count in current_config.items():
+                    card_display_name = self._get_card_display_name(card_name)
+                    self.tui.safe_print(f"  {card_display_name}: {count}张")
+            else:
+                self.tui.safe_print("  空")
+            
+            self.tui.safe_print("")
+            
+            # 显示所有可用卡牌选项
+            self.tui.safe_print("左键点击添加卡牌，右键点击移除卡牌：")
+            available_cards = list(self.all_cards.keys())
+            card_options = []
+            for card_name in available_cards:
+                display_name = self._get_card_display_name(card_name)
+                current_count = current_config.get(card_name, 0)
+                card_options.append(f"{display_name} (当前: {current_count}张)")
+            
+            # 添加功能按钮
+            card_options.extend([
+                "--- 功能操作 ---",
+                "移除卡牌模式",
+                "清空牌库",
+                "保存配置",
+                "返回大厅"
+            ])
+            
+            choice = self.tui.select_from_list("选择操作", card_options)
+            
+            if choice == -1:  # ESC
+                self.phase = GamePhase.LOBBY
+                break
+            elif choice < len(available_cards):  # 选择了卡牌
+                card_name = available_cards[choice]
+                if total_cards < 10:
+                    if temp_player.add_card_to_deck_config(card_name, 1):
+                        display_name = self._get_card_display_name(card_name)
+                        # 不显示成功信息，直接刷新界面
+                        pass
+                    else:
+                        self.tui.show_message("添加失败！")
+                else:
+                    self.tui.show_message("牌库已满（10/10）！")
+            elif choice == len(available_cards) + 1:  # 移除卡牌模式
+                self._deck_builder_remove_mode(temp_player)
+            elif choice == len(available_cards) + 2:  # 清空牌库
+                if self.tui.confirm("确定要清空当前牌库吗？"):
+                    temp_player.clear_deck_config()
+                    self.tui.show_message("牌库已清空")
+            elif choice == len(available_cards) + 3:  # 保存配置
+                if total_cards == 10:
+                    self._save_deck_config(current_config)
+                    self.tui.show_message("配置已保存！将在下次游戏中生效")
+                else:
+                    self.tui.show_message(f"牌库不完整！还需要 {10 - total_cards} 张卡")
+            elif choice == len(available_cards) + 4:  # 返回大厅
+                self.phase = GamePhase.LOBBY
+                break
+    
+    def _get_card_display_name(self, card_class_name: str) -> str:
+        """获取卡牌的显示名称"""
+        display_names = {
+            'AttackCard': '攻击卡',
+            'HealCard': '治疗卡', 
+            'DefendCard': '防御卡',
+            'PoisonCard': '混毒卡',
+            'DrawTestCard': '抽卡测试'
+        }
+        return display_names.get(card_class_name, card_class_name)
+    
+    def _deck_builder_remove_mode(self, player: Player):
+        """配卡界面 - 移除卡牌模式"""
+        current_config = player.get_deck_config()
+        if not current_config:
+            self.tui.show_message("牌库为空，无法移除卡牌！")
+            return
+        
+        while True:
+            self.tui.clear_screen()
+            
+            # 显示标题
+            title = "=== 移除卡牌模式 ==="
+            self.tui.safe_print(title)
+            self.tui.safe_print("")
+            
+            # 显示当前牌库配置
+            current_config = player.get_deck_config()
+            total_cards = sum(current_config.values())
+            
+            self.tui.safe_print(f"当前牌库（{total_cards}/10张）：")
+            if current_config:
+                for card_name, count in current_config.items():
+                    card_display_name = self._get_card_display_name(card_name)
+                    self.tui.safe_print(f"  {card_display_name}: {count}张")
+            else:
+                self.tui.safe_print("  空")
+            
+            self.tui.safe_print("")
+            self.tui.safe_print("点击以下卡牌移除一张：")
+            
+            # 只显示牌库中现有的卡牌
+            remove_options = []
+            card_names = []
+            
+            for card_name, count in current_config.items():
+                if count > 0:
+                    display_name = self._get_card_display_name(card_name)
+                    remove_options.append(f"{display_name} (当前: {count}张)")
+                    card_names.append(card_name)
+            
+            remove_options.append("返回上一级")
+            
+            choice = self.tui.select_from_list("选择要移除的卡牌", remove_options)
+            
+            if choice == -1 or choice == len(card_names):  # ESC或返回
+                break
+            elif choice < len(card_names):
+                card_name = card_names[choice]
+                if player.remove_card_from_deck_config(card_name, 1):
+                    # 不显示成功信息，直接刷新界面
+                    pass
+                else:
+                    self.tui.show_message("移除失败！")
+    
+    def _save_deck_config(self, config: Dict[str, int]):
+        """保存牌库配置到文件"""
+        # 简化实现：保存到全局变量
+        self.global_deck_config = config
+    
+    def _load_deck_config(self) -> Dict[str, int]:
+        """加载保存的牌库配置"""
+        return getattr(self, 'global_deck_config', {})
 
     def _phase_mode_selection(self):
         choice = self.tui.select_from_list("请选择游戏模式", ["玩家 vs 玩家", "玩家 vs AI"])
@@ -117,6 +312,16 @@ class GameManager:
             self._ai_select_chars(self.game_state.players[1])
         else:
             self._select_chars_for_player(self.game_state.players[1], "玩家2")
+        
+        # 应用保存的配卡配置到玩家（如果有）
+        saved_config = self._load_deck_config()
+        if saved_config:
+            try:
+                # 为玩家1应用配卡配置
+                self.game_state.players[0].set_custom_deck_config(saved_config)
+                self.tui.show_message("已应用保存的配卡配置")
+            except ValueError as e:
+                self.tui.show_message(f"配卡配置无效：{e}")
             
         # 初始化牌库和队伍效果
         for player in self.game_state.players:

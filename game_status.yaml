@@ -1,24 +1,24 @@
 global_info:
   player_count: 2
   turn_order:
-  - 0
   - 1
+  - 0
 live_info:
-  current_player_idx: 0
-  current_round: 4
-  game_over: false
-  winner: null
+  current_player_idx: 1
+  current_round: 6
+  game_over: true
+  winner: 1
 log:
-- Cafe 对 琉璃 使用攻击，造成 4 点伤害。
-- 队伍状态检查：玩家1(2存活) vs 玩家2(1存活)
-- 星河 消耗 2 点电能使用 攻击
-- 星河 使用了行动槽
-- 角色技能[琉璃]触发：进行随机判定... 结果是 5！
+- 玩家1 的所有角色电能和行动槽已重置
+- 队伍效果[Cafe星河]触发，额外抽2张牌
+- 玩家1 回合开始，抽了3张牌。
+- Cafe 消耗 2 点电能使用 攻击
+- Cafe 使用了行动槽
+- 角色技能[Cafe]触发：第一次伤害+1！
+- 角色技能[琉璃]触发：进行随机判定... 结果是 4！
 - '[琉璃] 判定失败，正常受到伤害。'
-- 星河 对 琉璃 使用攻击，造成 3 点伤害。
-- 星河 发电等级提升到 1 级！
-- 电能上限增加到 4 点，行动槽增加到 2 个
-- 队伍状态检查：玩家1(2存活) vs 玩家2(1存活)
+- Cafe 对 琉璃 使用攻击，造成 4 点伤害。
+- 玩家2 队伍全灭！玩家1 获胜！
 players:
 - characters:
   - action_slots:
@@ -27,9 +27,9 @@ players:
       slot_type: BASIC
       used_this_turn: true
     - max_uses: 1
-      remaining_uses: 0
+      remaining_uses: 1
       slot_type: BASIC
-      used_this_turn: true
+      used_this_turn: false
     - max_uses: 1
       remaining_uses: 1
       slot_type: BASIC
@@ -37,10 +37,10 @@ players:
     base_energy_limit: 3
     buffs: []
     class: Cafe
-    current_hp: 5
+    current_hp: 7
     defense_buff: 0
     energy_system:
-      accumulated_damage: 22
+      accumulated_damage: 23
       base_action_slots: 1
       base_energy_limit: 3
       current_energy: 1
@@ -57,22 +57,27 @@ players:
     name: Cafe
     status:
       first_damage_dealt_this_turn: true
+      next_turn_draw: 0
     upgrade_thresholds: *id001
   - action_slots:
     - max_uses: 1
-      remaining_uses: 0
+      remaining_uses: 1
       slot_type: BASIC
-      used_this_turn: true
+      used_this_turn: false
+    - max_uses: 1
+      remaining_uses: 1
+      slot_type: BASIC
+      used_this_turn: false
     base_energy_limit: 3
     buffs: []
     class: Xinhe
     current_hp: 11
     defense_buff: 0
     energy_system:
-      accumulated_damage: 6
+      accumulated_damage: 12
       base_action_slots: 1
       base_energy_limit: 3
-      current_energy: 4
+      current_energy: 2
       generation_level: 1
       max_generation_level: 5
       upgrade_thresholds: &id002
@@ -85,131 +90,48 @@ players:
     max_hp: 15
     name: 星河
     status:
+      next_turn_draw: 0
       used_card_this_turn: false
     upgrade_thresholds: *id002
-  deck:
-  - class: PoisonCard
-    energy_cost: 2
-    name: 淬毒
-  - class: HealCard
-    energy_cost: 2
-    name: 回血
-  - class: PoisonCard
-    energy_cost: 2
-    name: 淬毒
-  - class: PoisonCard
-    energy_cost: 2
-    name: 淬毒
-  - class: DefendCard
-    energy_cost: 1
-    name: 防御
-  - class: AttackCard
-    energy_cost: 2
-    name: 攻击
-  - class: DefendCard
-    energy_cost: 1
-    name: 防御
-  - class: PoisonCard
-    energy_cost: 2
-    name: 淬毒
-  - class: DefendCard
-    energy_cost: 1
-    name: 防御
-  - class: AttackCard
-    energy_cost: 2
-    name: 攻击
-  - class: DefendCard
-    energy_cost: 1
-    name: 防御
-  - class: PoisonCard
-    energy_cost: 2
-    name: 淬毒
-  - class: DefendCard
-    energy_cost: 1
-    name: 防御
-  - class: HealCard
-    energy_cost: 2
-    name: 回血
-  - class: PoisonCard
-    energy_cost: 2
-    name: 淬毒
-  - class: HealCard
-    energy_cost: 2
-    name: 回血
-  - class: PoisonCard
-    energy_cost: 2
-    name: 淬毒
+  custom_deck_config:
+    AttackCard: 3
+    DrawTestCard: 3
+    HealCard: 2
+    PoisonCard: 2
+  deck: []
   discard_pile:
   - class: AttackCard
     energy_cost: 2
     name: 攻击
-  - class: AttackCard
-    energy_cost: 2
-    name: 攻击
-  - class: AttackCard
-    energy_cost: 2
-    name: 攻击
-  - class: AttackCard
-    energy_cost: 2
-    name: 攻击
-  - class: PoisonCard
-    energy_cost: 2
-    name: 淬毒
-  - class: PoisonCard
-    energy_cost: 2
-    name: 淬毒
-  - class: PoisonCard
-    energy_cost: 2
-    name: 淬毒
-  - class: AttackCard
-    energy_cost: 2
-    name: 攻击
-  - class: AttackCard
-    energy_cost: 2
-    name: 攻击
   hand:
+  - class: DrawTestCard
+    energy_cost: 2
+    name: 抽卡测试
   - class: HealCard
     energy_cost: 2
     name: 回血
   - class: HealCard
     energy_cost: 2
     name: 回血
-  - class: HealCard
+  - class: DrawTestCard
     energy_cost: 2
-    name: 回血
-  - class: DefendCard
-    energy_cost: 1
-    name: 防御
-  - class: HealCard
-    energy_cost: 2
-    name: 回血
-  - class: DefendCard
-    energy_cost: 1
-    name: 防御
+    name: 抽卡测试
   - class: AttackCard
     energy_cost: 2
     name: 攻击
-  - class: HealCard
+  - class: DrawTestCard
     energy_cost: 2
-    name: 回血
-  - class: DefendCard
-    energy_cost: 1
-    name: 防御
-  - class: HealCard
+    name: 抽卡测试
+  - class: PoisonCard
     energy_cost: 2
-    name: 回血
+    name: 淬毒
   - class: AttackCard
     energy_cost: 2
     name: 攻击
-  - class: DefendCard
-    energy_cost: 1
-    name: 防御
-  - class: DefendCard
-    energy_cost: 1
-    name: 防御
-  - class: HealCard
+  - class: PoisonCard
     energy_cost: 2
-    name: 回血
+    name: 淬毒
+  has_custom_deck: true
   id: 1
   status:
     used_attack_this_turn: true
@@ -221,27 +143,31 @@ players:
       remaining_uses: 1
       slot_type: BASIC
       used_this_turn: false
+    - max_uses: 1
+      remaining_uses: 1
+      slot_type: BASIC
+      used_this_turn: false
     base_energy_limit: 3
     buffs: []
-    class: Yangguang
+    class: Liuli
     current_hp: 0
     defense_buff: 0
     energy_system:
-      accumulated_damage: 4
+      accumulated_damage: 9
       base_action_slots: 1
       base_energy_limit: 3
-      current_energy: 2
-      generation_level: 0
+      current_energy: 1
+      generation_level: 1
       max_generation_level: 5
       upgrade_thresholds: &id003
-      - 5
-      - 13
-      - 24
+      - 4
+      - 11
+      - 22
       - 38
-      - 55
+      - 60
     is_alive: false
     max_hp: 15
-    name: 阳光
+    name: 琉璃
     status: {}
     upgrade_thresholds: *id003
   - action_slots:
@@ -249,66 +175,44 @@ players:
       remaining_uses: 1
       slot_type: BASIC
       used_this_turn: false
-    - max_uses: 1
-      remaining_uses: 1
-      slot_type: BASIC
-      used_this_turn: false
     base_energy_limit: 3
-    buffs:
-    - buff_type: POISON
-      category: DAMAGE_OVER_TIME
-      class: PoisonBuff
-      duration: -1
-      stacks: 2
-    class: Liuli
-    current_hp: 2
+    buffs: []
+    class: Xinhe
+    current_hp: 0
     defense_buff: 0
     energy_system:
-      accumulated_damage: 10
+      accumulated_damage: 3
       base_action_slots: 1
       base_energy_limit: 3
-      current_energy: 1
-      generation_level: 1
+      current_energy: 2
+      generation_level: 0
       max_generation_level: 5
       upgrade_thresholds: &id004
-      - 4
-      - 11
-      - 22
+      - 5
+      - 13
+      - 24
       - 38
-      - 60
-    is_alive: true
+      - 55
+    is_alive: false
     max_hp: 15
-    name: 琉璃
-    status: {}
+    name: 星河
+    status:
+      used_card_this_turn: false
     upgrade_thresholds: *id004
+  custom_deck_config: {}
   deck:
-  - class: HealCard
-    energy_cost: 2
-    name: 回血
-  - class: AttackCard
-    energy_cost: 2
-    name: 攻击
   - class: PoisonCard
     energy_cost: 2
     name: 淬毒
-  - class: AttackCard
-    energy_cost: 2
-    name: 攻击
-  - class: HealCard
-    energy_cost: 2
-    name: 回血
   - class: DefendCard
     energy_cost: 1
     name: 防御
   - class: HealCard
     energy_cost: 2
     name: 回血
-  - class: AttackCard
+  - class: HealCard
     energy_cost: 2
-    name: 攻击
-  - class: DefendCard
-    energy_cost: 1
-    name: 防御
+    name: 回血
   - class: DefendCard
     energy_cost: 1
     name: 防御
@@ -327,48 +231,60 @@ players:
   - class: PoisonCard
     energy_cost: 2
     name: 淬毒
-  - class: PoisonCard
+  - class: AttackCard
     energy_cost: 2
-    name: 淬毒
-  - class: HealCard
-    energy_cost: 2
-    name: 回血
-  - class: DefendCard
-    energy_cost: 1
-    name: 防御
-  - class: DefendCard
-    energy_cost: 1
-    name: 防御
+    name: 攻击
   - class: AttackCard
     energy_cost: 2
     name: 攻击
   - class: DefendCard
     energy_cost: 1
     name: 防御
-  - class: AttackCard
-    energy_cost: 2
-    name: 攻击
   - class: DefendCard
     energy_cost: 1
     name: 防御
-  - class: HealCard
-    energy_cost: 2
-    name: 回血
   - class: DefendCard
     energy_cost: 1
     name: 防御
   - class: PoisonCard
     energy_cost: 2
     name: 淬毒
-  - class: DefendCard
-    energy_cost: 1
-    name: 防御
-  - class: HealCard
-    energy_cost: 2
-    name: 回血
   - class: AttackCard
     energy_cost: 2
     name: 攻击
+  - class: DefendCard
+    energy_cost: 1
+    name: 防御
+  - class: AttackCard
+    energy_cost: 2
+    name: 攻击
+  - class: AttackCard
+    energy_cost: 2
+    name: 攻击
+  - class: AttackCard
+    energy_cost: 2
+    name: 攻击
+  - class: PoisonCard
+    energy_cost: 2
+    name: 淬毒
+  - class: PoisonCard
+    energy_cost: 2
+    name: 淬毒
+  - class: DefendCard
+    energy_cost: 1
+    name: 防御
+  - class: AttackCard
+    energy_cost: 2
+    name: 攻击
+  - class: HealCard
+    energy_cost: 2
+    name: 回血
+  - class: HealCard
+    energy_cost: 2
+    name: 回血
+  - class: DefendCard
+    energy_cost: 1
+    name: 防御
   - class: HealCard
     energy_cost: 2
     name: 回血
@@ -379,33 +295,36 @@ players:
   - class: PoisonCard
     energy_cost: 2
     name: 淬毒
-  - class: AttackCard
-    energy_cost: 2
-    name: 攻击
-  - class: PoisonCard
-    energy_cost: 2
-    name: 淬毒
-  - class: PoisonCard
-    energy_cost: 2
-    name: 淬毒
   - class: PoisonCard
     energy_cost: 2
     name: 淬毒
   - class: AttackCard
     energy_cost: 2
     name: 攻击
-  hand:
-  - class: DefendCard
-    energy_cost: 1
-    name: 防御
   - class: HealCard
     energy_cost: 2
     name: 回血
+  - class: HealCard
+    energy_cost: 2
+    name: 回血
+  - class: PoisonCard
+    energy_cost: 2
+    name: 淬毒
   - class: AttackCard
     energy_cost: 2
     name: 攻击
+  - class: HealCard
+    energy_cost: 2
+    name: 回血
+  - class: DefendCard
+    energy_cost: 1
+    name: 防御
+  - class: DefendCard
+    energy_cost: 1
+    name: 防御
+  hand: []
+  has_custom_deck: false
   id: 2
   status:
-    used_attack_this_turn: true
-  team_effects:
-  - YANGGUANG_LIULI
+    used_attack_this_turn: false
+  team_effects: []
