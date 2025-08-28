@@ -2,7 +2,7 @@
 game_settings:
   initial_hp: 15
   initial_hand_size: 3
-  characters_per_player: 2
+  characters_per_player: 3
   # deck_composition: 已移除默认配置，现在使用配卡界面的自定义配置
   # 新的配卡系统要求每个玩家自定义10张卡的组合
 

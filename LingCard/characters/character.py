@@ -337,3 +337,7 @@ class Character:
     def on_turn_end(self, game_state, player, engine=None):
         """回合结束时的钩子"""
         pass
+    
+    def on_card_played(self, card, game_state):
+        """当角色使用卡牌时的钩子"""
+        pass

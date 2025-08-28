@@ -17,11 +17,23 @@ class GamePhase(Enum):
 
 class ActionType(Enum):
     """行动卡类型枚举"""
+    # 剑技类卡牌
+    SWORD_ATTACK = "剑技攻击"  # 基础剑技攻击（锐斩、滑刃）
+    SWORD_SPECIAL = "剑技特殊"  # 特殊剑技（披荆斩棘、拔刀斩）
+    SWORD_SUPPORT = "剑技辅助"  # 剑技辅助（祛痕、剑锋直转、轮斩）
+    
+    # 重铸系列
+    REFORGE = "重铸"  # 重铸系列卡牌
+    
+    # 解放系列
+    LIBERATION = "解放"  # 解放系列卡牌
+    
+    # 保留原有类型以保持兼容性
     ATTACK = "攻击"
     HEAL = "回血"
     DEFEND = "防御"
-    POISON = "毒素"  # 新增：毒素类型，用于施加中毒等debuff
-    SPECIAL = "特殊"  # 新增：特殊类型，用于特殊效果卡牌
+    POISON = "毒素"
+    SPECIAL = "特殊"
 
 class TeamEffect(Enum):
     """特殊队伍效果枚举"""

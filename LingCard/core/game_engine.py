@@ -17,10 +17,19 @@ class GameEngine:
         if player.has_custom_deck and player.custom_deck_config:
             # 使用玩家自定义的牌库配置
             for card_name, count in player.custom_deck_config.items():
+                # 检查卡牌是否已被标记为移除
+                if hasattr(player, 'game_state') and hasattr(player.game_state, 'removed_cards') and card_name in player.game_state.removed_cards:
+                    continue  # 跳过已被移除的卡牌
+                
                 if card_name in card_classes:
                     card_class = card_classes[card_name]
                     for _ in range(count):
-                        deck.append(card_class())
+                        # 检查要创建的卡牌是否已被标记为移除
+                        card_instance = card_class()
+                        if hasattr(player, 'game_state') and hasattr(player.game_state, 'removed_cards'):
+                            if card_instance.__class__.__name__ in player.game_state.removed_cards:
+                                continue  # 跳过已被移除的卡牌
+                        deck.append(card_instance)
                 else:
                     print(f"警告：未知的卡牌类型 {card_name}，已跳过")
         else:
@@ -31,10 +40,19 @@ class GameEngine:
             
             print(f"警告：玩家{player.id}没有自定义配卡，使用默认配置")
             for card_name, count in default_config.items():
+                # 检查卡牌是否已被标记为移除
+                if hasattr(player, 'game_state') and hasattr(player.game_state, 'removed_cards') and card_name in player.game_state.removed_cards:
+                    continue  # 跳过已被移除的卡牌
+                
                 if card_name in card_classes:
                     card_class = card_classes[card_name]
                     for _ in range(count):
-                        deck.append(card_class())
+                        # 检查要创建的卡牌是否已被标记为移除
+                        card_instance = card_class()
+                        if hasattr(player, 'game_state') and hasattr(player.game_state, 'removed_cards'):
+                            if card_instance.__class__.__name__ in player.game_state.removed_cards:
+                                continue  # 跳过已被移除的卡牌
+                        deck.append(card_instance)
                 else:
                     print(f"警告：未知的卡牌类型 {card_name}，已跳过")
         
@@ -44,10 +62,19 @@ class GameEngine:
     def draw_cards(self, player, count):
         """为玩家抽牌 - 优先从牌库抽取，牌库为空时从弃牌堆重新洗牌"""
         drawn_count = 0
-        for _ in range(count):
+        attempts = 0
+        max_attempts = count * 3  # 设置最大尝试次数以防无限循环
+        
+        while drawn_count < count and attempts < max_attempts:
+            attempts += 1
+            
             # 如果牌库为空但弃牌堆有牌，将弃牌堆洗牌后作为新牌库
             if not player.deck and player.discard_pile:
-                player.deck = player.discard_pile[:]
+                # 过滤掉已被移除的卡牌
+                if hasattr(player, 'game_state') and hasattr(player.game_state, 'removed_cards'):
+                    player.deck = [card for card in player.discard_pile if card.__class__.__name__ not in player.game_state.removed_cards]
+                else:
+                    player.deck = player.discard_pile[:]
                 player.discard_pile = []
                 random.shuffle(player.deck)
                 # 添加日志信息
@@ -57,6 +84,11 @@ class GameEngine:
             # 从牌库抽牌
             if player.deck:
                 card = player.deck.pop()
+                # 检查卡牌是否已被移除
+                if hasattr(player, 'game_state') and hasattr(player.game_state, 'removed_cards'):
+                    if card.__class__.__name__ in player.game_state.removed_cards:
+                        # 跳过已被移除的卡牌，但不增加drawn_count，继续尝试
+                        continue
                 player.hand.append(card)
                 drawn_count += 1
             else:
@@ -93,6 +125,9 @@ class GameEngine:
                 char.reset_turn_status()
         
         game_state.add_log(f"玩家{player.id} 的所有角色电能和行动槽已重置")
+        
+        # 在回合开始时处理延迟效果（在抽卡之前处理，确保延迟效果能够正确应用）
+        game_state.process_delayed_effects(game_state.current_round, f"player_{player.id}")
         
         # 基础抽卡（现在改为1张）
         cards_to_draw = 1
@@ -132,6 +167,9 @@ class GameEngine:
         for char in player.get_alive_characters():
             char.on_turn_end(game_state, player, self)
             char.reset_turn_status()  # 重置回合状态
+        
+        # 处理回合结束时立即触发的延迟效果（重铸系列卡牌等）
+        game_state.process_turn_end_effects(game_state.current_round, f"player_{player.id}")
         
         # 处理所有玩家角色的buff效果（中毒等持续伤害在回合结束时结算）
         all_players = [player, opponent]
@@ -192,8 +230,27 @@ class GameEngine:
         
         # 检查电能是否足够
         if not card.can_use(user_char):
-            energy_status = user_char.get_energy_status()
-            game_state.add_log(f"错误：{user_char.name} 电能不足！当前电能：{energy_status['current_energy']}/{energy_status['energy_limit']}，需要：{card.energy_cost}")
+            # 先检查是电能问题还是其他问题
+            if not user_char.energy_system.can_consume_energy(card.energy_cost):
+                # 电能不足
+                energy_status = user_char.get_energy_status()
+                game_state.add_log(f"错误：{user_char.name} 电能不足！当前电能：{energy_status['current_energy']}/{energy_status['energy_limit']}，需要：{card.energy_cost}")
+            else:
+                # 其他原因（如剑意不足），让卡牌自己处理错误提示
+                # 对于拔刀斩等特殊卡牌，重新调用can_use让它显示正确的错误信息
+                if hasattr(card, 'get_required_sword_intent'):
+                    # 这是一张需要剑意的卡牌，检查剑意是否足够
+                    from LingCard.core.buff_system import BuffType
+                    sword_intent_buff = user_char.buff_manager.get_buff_by_type(BuffType.SWORD_INTENT)
+                    required_sword_intent = getattr(card, 'get_required_sword_intent')()
+                    
+                    if not sword_intent_buff or sword_intent_buff.stacks < required_sword_intent:
+                        current_stacks = sword_intent_buff.stacks if sword_intent_buff else 0
+                        game_state.add_log(f"错误：{user_char.name} 剑意不足！需要至少{required_sword_intent}层剑意，当前仅有{current_stacks}层")
+                    else:
+                        game_state.add_log(f"错误：{user_char.name} 无法使用 {card.name}（未知原因）")
+                else:
+                    game_state.add_log(f"错误：{user_char.name} 无法使用 {card.name}")
             return False
         
         # 通过所有验证，现在实际执行行动
@@ -215,6 +272,9 @@ class GameEngine:
             return False
         
         game_state.add_log(f"{user_char.name} 使用了行动槽")
+        
+        # 调用角色的on_card_played钩子方法
+        user_char.on_card_played(card, game_state)
 
         if card.action_type == ActionType.ATTACK:
             opponent_alive = opponent.get_alive_characters()
@@ -246,6 +306,32 @@ class GameEngine:
         elif card.action_type == ActionType.SPECIAL:
             # 处理特殊类型卡牌（如抽卡测试）
             self._execute_special(game_state, user_char, card)
+        # 新增：处理剑技系列卡牌
+        elif card.action_type in [ActionType.SWORD_ATTACK, ActionType.SWORD_SPECIAL, ActionType.SWORD_SUPPORT]:
+            opponent_alive = opponent.get_alive_characters()
+            # 对于辅助类剑技，目标可能是自己的队友
+            if card.action_type == ActionType.SWORD_SUPPORT:
+                target_char = user_char  # 默认为自己
+            else:
+                if target_char_idx >= len(opponent_alive):
+                    game_state.add_log(f"错误：无效的目标角色索引")
+                    return False
+                target_char = opponent_alive[target_char_idx]
+            self._execute_sword_technique(game_state, user_char, card, target_char)
+        elif card.action_type == ActionType.REFORGE:
+            opponent_alive = opponent.get_alive_characters()
+            if target_char_idx >= len(opponent_alive):
+                game_state.add_log(f"错误：无效的目标角色索引")
+                return False
+            target_char = opponent_alive[target_char_idx]
+            self._execute_reforge(game_state, user_char, card, target_char)
+        elif card.action_type == ActionType.LIBERATION:
+            opponent_alive = opponent.get_alive_characters()
+            if target_char_idx >= len(opponent_alive):
+                game_state.add_log(f"错误：无效的目标角色索引")
+                return False
+            target_char = opponent_alive[target_char_idx]
+            self._execute_liberation(game_state, user_char, card, target_char)
             
         self.check_game_over(game_state)
         return True
@@ -327,6 +413,66 @@ class GameEngine:
             card.apply_effect(game_state, user)
         else:
             game_state.add_log(f"{user.name} 使用了 {card.name}，但没有实现效果")
+    
+    def _execute_sword_technique(self, game_state, user, card, target):
+        """
+        执行剑技系列卡牌效果
+        
+        Args:
+            game_state: 游戏状态
+            user: 使用者
+            card: 剑技卡牌
+            target: 目标角色
+        """
+        if hasattr(card, 'execute_effect'):
+            result = card.execute_effect(user, target, game_state)
+            # 检查是否具有穿透效果（如拔刀斩）
+            if hasattr(card, 'piercing') and card.piercing:
+                # 对于穿透伤害，不需要额外处理，卡牌已经处理了
+                pass
+            
+            # 确保目标的存活状态正确更新
+            if hasattr(target, 'current_hp') and target.current_hp <= 0:
+                target.is_alive = False
+            
+            return result
+        else:
+            # 备用方案：使用旧的攻击逻辑
+            self._execute_attack(game_state, game_state.get_current_player(), user, card, target)
+    
+    def _execute_reforge(self, game_state, user, card, target):
+        """
+        执行重铸系列卡牌效果
+        
+        Args:
+            game_state: 游戏状态
+            user: 使用者
+            card: 重铸卡牌
+            target: 目标角色
+        """
+        if hasattr(card, 'execute_effect'):
+            result = card.execute_effect(user, target, game_state)
+            return result
+        else:
+            # 备用方案：使用攻击逻辑
+            self._execute_attack(game_state, game_state.get_current_player(), user, card, target)
+    
+    def _execute_liberation(self, game_state, user, card, target):
+        """
+        执行解放系列卡牌效果
+        
+        Args:
+            game_state: 游戏状态
+            user: 使用者
+            card: 解放卡牌
+            target: 目标角色
+        """
+        if hasattr(card, 'execute_effect'):
+            result = card.execute_effect(user, target, game_state)
+            return result
+        else:
+            # 备用方案：使用攻击逻辑
+            self._execute_attack(game_state, game_state.get_current_player(), user, card, target)
 
     def check_game_over(self, game_state: GameState):
         """

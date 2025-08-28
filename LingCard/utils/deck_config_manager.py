@@ -71,6 +71,57 @@ class DeckConfigManager:
             print(f"加载配卡配置失败: {e}")
             return None
     
+    def _validate_deck_config(self, config: Dict[str, int]) -> bool:
+        """
+        验证配卡配置的有效性
+        
+        Args:
+            config: 配卡配置字典
+            
+        Returns:
+            bool: 配置是否有效
+        """
+        if not isinstance(config, dict):
+            return False
+        
+        # 检查卡牌总数是否合理 (通常为10-30张)
+        total_cards = sum(config.values())
+        if total_cards < 5 or total_cards > 50:
+            return False
+        
+        # 检查每张卡牌数量是否合理
+        for card_name, count in config.items():
+            if not isinstance(card_name, str) or not isinstance(count, int):
+                return False
+            if count < 0 or count > 10:  # 每种卡牌最多10张
+                return False
+        
+        # 检查卡牌类型是否在可用列表中
+        available_cards = self.get_available_card_types()
+        for card_name in config.keys():
+            if card_name not in available_cards:
+                return False
+        
+        return True
+    
+    def _load_all_configs(self) -> Dict[str, Dict[str, int]]:
+        """
+        加载所有玩家的配卡配置
+        
+        Returns:
+            Dict[str, Dict[str, int]]: 所有玩家的配置
+        """
+        try:
+            if not self.config_file.exists():
+                return {}
+            
+            with open(self.config_file, 'r', encoding='utf-8') as f:
+                data = yaml.safe_load(f)
+                return data if data else {}
+        except Exception as e:
+            print(f"加载配置文件失败: {e}")
+            return {}
+    
     def get_default_deck_config(self) -> Dict[str, int]:
         """
         获取默认的配卡配置
@@ -79,88 +130,21 @@ class DeckConfigManager:
             Dict[str, int]: 默认配卡配置
         """
         return {
-            'AttackCard': 3,
-            'HealCard': 2,
-            'DefendCard': 3,
-            'PoisonCard': 1,
-            'DrawTestCard': 1
+            # 剑技卡牌
+            'SharpSlashCard': 2,      # 锐斩 2张
+            'SlidingBladeCard': 2,    # 滑刃 2张
+            'RemoveScarsCard': 2,     # 祛痕 2张
+            
+            # 重铸系列（只有重铸.木刀在默认配置中）
+            'ReforgeWoodenSwordCard': 1,  # 重铸.木刀 1张
+            
+            # 功能性卡牌
+            'SwordEdgeTurnCard': 1,   # 剑锋直转 1张
+            'WheelSlashCard': 1,      # 轮斩 1张
+            
+            # 补充卡牌以达到10张
+            'DrawSwordSlashCard': 1   # 拔刀斩 1张
         }
-    
-    def delete_deck_config(self, player_id: str) -> bool:
-        """
-        删除指定玩家的配卡配置
-        
-        Args:
-            player_id: 玩家ID
-            
-        Returns:
-            bool: 删除是否成功
-        """
-        try:
-            all_configs = self._load_all_configs()
-            if player_id in all_configs:
-                del all_configs[player_id]
-                
-                with open(self.config_file, 'w', encoding='utf-8') as f:
-                    yaml.dump(all_configs, f, allow_unicode=True, default_flow_style=False)
-                
-                return True
-            return False
-        except Exception as e:
-            print(f"删除配卡配置失败: {e}")
-            return False
-    
-    def list_all_player_configs(self) -> Dict[str, Dict[str, int]]:
-        """
-        列出所有玩家的配卡配置
-        
-        Returns:
-            Dict[str, Dict[str, int]]: 所有玩家的配卡配置
-        """
-        return self._load_all_configs()
-    
-    def _load_all_configs(self) -> Dict[str, Dict[str, int]]:
-        """
-        加载所有玩家的配卡配置
-        
-        Returns:
-            Dict[str, Dict[str, int]]: 所有配置的字典
-        """
-        if not self.config_file.exists():
-            return {}
-        
-        try:
-            with open(self.config_file, 'r', encoding='utf-8') as f:
-                return yaml.safe_load(f) or {}
-        except (yaml.YAMLError, IOError):
-            return {}
-    
-    def _validate_deck_config(self, config: Dict[str, int]) -> bool:
-        """
-        验证配卡配置的有效性
-        
-        Args:
-            config: 配卡配置
-            
-        Returns:
-            bool: 配置是否有效
-        """
-        if not isinstance(config, dict):
-            return False
-        
-        # 检查卡牌总数是否为10张
-        total_cards = sum(config.values())
-        if total_cards != 10:
-            print(f"配卡配置无效：总卡牌数为{total_cards}，必须为10张")
-            return False
-        
-        # 检查是否有负数
-        for card_name, count in config.items():
-            if not isinstance(count, int) or count < 0:
-                print(f"配卡配置无效：卡牌{card_name}的数量必须为非负整数")
-                return False
-        
-        return True
     
     def get_available_card_types(self) -> List[str]:
         """
@@ -170,11 +154,24 @@ class DeckConfigManager:
             List[str]: 可用卡牌类型列表
         """
         return [
-            'AttackCard',
-            'HealCard', 
-            'DefendCard',
-            'PoisonCard',
-            'DrawTestCard'
+            # 剑技卡牌
+            'SharpSlashCard',
+            'SlidingBladeCard',
+            'ThornsSlashCard',
+            'RemoveScarsCard',
+            'SwordEdgeTurnCard',
+            'WheelSlashCard',
+            'DrawSwordSlashCard',
+            
+            # 重铸系列卡牌（注意：除重铸.木刀外，其他重铸卡牌不应出现在可选列表中）
+            'ReforgeWoodenSwordCard',
+            # 'ReforgeCrudeIronCard',     # 不应出现在可选列表中
+            # 'ReforgeFamousBladeCard',   # 不应出现在可选列表中
+            # 'ReforgeDemonBladeCard',    # 不应出现在可选列表中
+            # 'ReforgeMagicBladeCard',    # 不应出现在可选列表中
+            
+            # 解放系列卡牌（解放.魔刀不应出现在可选列表中）
+            # 'LiberationMagicBladeCard'  # 不应出现在可选列表中
         ]
     
     def get_card_display_name(self, card_class_name: str) -> str:
@@ -188,11 +185,24 @@ class DeckConfigManager:
             str: 卡牌显示名称
         """
         display_names = {
-            'AttackCard': '攻击卡',
-            'HealCard': '治疗卡',
-            'DefendCard': '防御卡',
-            'PoisonCard': '淬毒卡',
-            'DrawTestCard': '抽卡测试'
+            # 剑技卡牌
+            'SharpSlashCard': '锐斩',
+            'SlidingBladeCard': '滑刃',
+            'ThornsSlashCard': '披荆斩棘',
+            'RemoveScarsCard': '祛痕',
+            'SwordEdgeTurnCard': '剑锋直转',
+            'WheelSlashCard': '轮斩',
+            'DrawSwordSlashCard': '拔刀斩',
+            
+            # 重铸系列卡牌
+            'ReforgeWoodenSwordCard': '重铸.木刀',
+            'ReforgeCrudeIronCard': '重铸.粗制铁刃',
+            'ReforgeFamousBladeCard': '重铸.名刀',
+            'ReforgeDemonBladeCard': '重铸.妖刀',
+            'ReforgeMagicBladeCard': '重铸.魔刀',
+            
+            # 解放系列卡牌
+            'LiberationMagicBladeCard': '解放.魔刀'
         }
         return display_names.get(card_class_name, card_class_name)
     

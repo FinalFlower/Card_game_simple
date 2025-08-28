@@ -5,12 +5,27 @@ from enum import Enum
 
 class BuffType(Enum):
     """Buff类型枚举"""
+    # 持续伤害类
     POISON = "中毒"
     BURN = "燃烧"
+    
+    # 状态效果类
     FREEZE = "冰冻"
+    
+    # 武器精通类
+    SWORD_INTENT = "剑意"  # 新增：剑意系统
+    DEMONIC = "堕魔"         # 新增：堕魔状态
+    
+    # 防护类
     SHIELD = "护盾"
+    
+    # 恢复类
     REGENERATION = "再生"
+    
+    # 增益类
     STRENGTH = "力量"
+    
+    # 负面类
     WEAKNESS = "虚弱"
 
 class BuffCategory(Enum):

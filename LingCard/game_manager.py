@@ -170,7 +170,8 @@ class GameManager:
             
             # 显示所有可用卡牌选项
             self.tui.safe_print("左键点击添加卡牌，右键点击移除卡牌：")
-            available_cards = list(self.all_cards.keys())
+            deck_manager = get_deck_config_manager()
+            available_cards = deck_manager.get_available_card_types()
             card_options = []
             for card_name in available_cards:
                 display_name = self._get_card_display_name(card_name)
@@ -257,8 +258,13 @@ class GameManager:
             remove_options = []
             card_names = []
             
+            # 使用DeckConfigManager来获取可用卡牌类型，确保一致性
+            deck_manager = get_deck_config_manager()
+            available_card_types = set(deck_manager.get_available_card_types())
+            
             for card_name, count in current_config.items():
-                if count > 0:
+                # 确保只显示有效的卡牌类型
+                if count > 0 and card_name in available_card_types:
                     display_name = self._get_card_display_name(card_name)
                     remove_options.append(f"{display_name} (当前: {count}张)")
                     card_names.append(card_name)
@@ -359,7 +365,7 @@ class GameManager:
             options = [f"{c().name} - {c().description}" for c in available_chars]
             choice_idx = self.tui.select_from_list(prompt, options)
             
-            chosen_char_class = available_chars.pop(choice_idx)
+            chosen_char_class = available_chars.pop(choice_idx)  # 从当前玩家的可选列表中移除
             char_instance = chosen_char_class()
             # 从config加载HP
             char_instance.max_hp = self.config['game_settings']['initial_hp']
@@ -370,15 +376,20 @@ class GameManager:
         available_chars = list(self.all_characters.values())
         random.shuffle(available_chars)
         for i in range(self.config['game_settings']['characters_per_player']):
-            chosen_char_class = available_chars.pop(0)
-            char_instance = chosen_char_class()
-            char_instance.max_hp = self.config['game_settings']['initial_hp']
-            char_instance.current_hp = char_instance.max_hp
-            player.characters.append(char_instance)
+            # AI也不重复选择，从可用列表中移除已选角色
+            if available_chars:  # 确保还有可用角色
+                chosen_char_class = available_chars.pop(0)
+                char_instance = chosen_char_class()
+                char_instance.max_hp = self.config['game_settings']['initial_hp']
+                char_instance.current_hp = char_instance.max_hp
+                player.characters.append(char_instance)
         self.tui.show_message("AI 已选择角色。")
 
     def _phase_player_turn(self):
         player = self.game_state.get_current_player()
+        
+        # 在回合开始时处理延迟效果
+        self.engine.process_turn_start(self.game_state)
         
         while True:
             options = [f"使用: {card.name}" for card in player.hand] + ["结束回合"]
@@ -396,8 +407,25 @@ class GameManager:
             if user_choice == -1: continue
 
             # 选择目标
-            if card.action_type == ActionType.ATTACK or card.action_type == ActionType.POISON:
+            # 祛痕卡牌（SWORD_SUPPORT类型）选择友方角色
+            if card.action_type == ActionType.SWORD_SUPPORT:
+                targets = player.get_alive_characters()
+            # 重铸和解放系列卡牌选择敌方角色
+            elif card.action_type in [ActionType.REFORGE, ActionType.LIBERATION]:
                 targets = self.game_state.get_opponent_player().get_alive_characters()
+            # 其他剑技卡牌选择敌方角色
+            elif card.action_type in [ActionType.SWORD_ATTACK, ActionType.SWORD_SPECIAL]:
+                targets = self.game_state.get_opponent_player().get_alive_characters()
+            # 攻击和淬毒卡牌选择敌方角色
+            elif card.action_type == ActionType.ATTACK or card.action_type == ActionType.POISON:
+                targets = self.game_state.get_opponent_player().get_alive_characters()
+            # 治疗卡牌选择友方角色
+            elif card.action_type == ActionType.HEAL:
+                targets = player.get_alive_characters()
+            # 防御卡牌选择友方角色
+            elif card.action_type == ActionType.DEFEND:
+                targets = player.get_alive_characters()
+            # 其他卡牌选择友方角色
             else:
                 targets = player.get_alive_characters()
             
@@ -419,6 +447,9 @@ class GameManager:
     def _phase_ai_turn(self):
         player = self.game_state.get_current_player()
         opponent = self.game_state.get_opponent_player()
+        
+        # 在回合开始时处理延迟效果
+        self.engine.process_turn_start(self.game_state)
         
         self.tui.render_and_show_message(self.game_state, f"AI (玩家 {player.id}) 正在思考...", 1.5)
 
@@ -443,26 +474,47 @@ class GameManager:
                     
                     # 根据卡牌类型找到合适的目标
                     targets = []
-                    if card.action_type == ActionType.ATTACK or card.action_type == ActionType.POISON:
+                    # 祛痕卡牌（SWORD_SUPPORT类型）选择友方角色
+                    if card.action_type == ActionType.SWORD_SUPPORT:
+                        targets = player.get_alive_characters()
+                    # 重铸和解放系列卡牌选择敌方角色
+                    elif card.action_type in [ActionType.REFORGE, ActionType.LIBERATION]:
                         targets = opponent.get_alive_characters()
+                    # 其他剑技卡牌选择敌方角色
+                    elif card.action_type in [ActionType.SWORD_ATTACK, ActionType.SWORD_SPECIAL]:
+                        targets = opponent.get_alive_characters()
+                    # 攻击和淬毒卡牌选择敌方角色
+                    elif card.action_type == ActionType.ATTACK or card.action_type == ActionType.POISON:
+                        targets = opponent.get_alive_characters()
+                    # 治疗卡牌选择受伤的友方角色
                     elif card.action_type == ActionType.HEAL:
                         # 只对受伤的角色使用治疗
                         targets = [c for c in player.get_alive_characters() if c.current_hp < c.max_hp]
+                    # 防御卡牌选择友方角色
                     elif card.action_type == ActionType.DEFEND:
                         targets = player.get_alive_characters()
+                    # 其他卡牌选择友方角色
+                    else:
+                        targets = player.get_alive_characters()
+                    
+                    # 如果没有合适的目标，跳过这张卡牌
+                    if not targets:
+                        continue
                     
                     # 为每个可能的目标创建行动选项
                     for target_idx, target in enumerate(targets):
                         action_priority = self._calculate_action_priority(card, char, target, player, opponent)
-                        possible_actions.append({
-                            'card_idx': card_idx,
-                            'user_char': char,
-                            'user_char_idx': player.get_alive_characters().index(char),
-                            'target_char': target,
-                            'target_idx': target_idx,
-                            'card': card,
-                            'priority': action_priority
-                        })
+                        # 只有优先级大于0的行动才考虑
+                        if action_priority > 0:
+                            possible_actions.append({
+                                'card_idx': card_idx,
+                                'user_char': char,
+                                'user_char_idx': player.get_alive_characters().index(char),
+                                'target_char': target,
+                                'target_idx': target_idx,
+                                'card': card,
+                                'priority': action_priority
+                            })
             
             # 如果没有可执行的行动，结束回合
             if not possible_actions:
@@ -511,6 +563,21 @@ class GameManager:
         """
         priority = 0.0
         
+        # 检查卡牌是否可以使用（包括电能和特殊条件）
+        if not card.can_use(user_char):
+            return -1000  # 无法使用的卡牌优先级设为极低
+        
+        # 对于拔刀斩卡牌，检查剑意层数
+        if card.action_type == ActionType.SWORD_SPECIAL:
+            # 检查是否有足够的剑意层数
+            from LingCard.core.buff_system import BuffType
+            sword_intent_buff = user_char.buff_manager.get_buff_by_type(BuffType.SWORD_INTENT)
+            required_sword_intent = 5  # 拔刀斩需要5层剑意
+            
+            # 如果是拔刀斩卡牌但剑意不足，降低优先级
+            if not sword_intent_buff or sword_intent_buff.stacks < required_sword_intent:
+                return -500  # 剑意不足的拔刀斩优先级较低
+        
         if card.action_type == ActionType.ATTACK:
             # 攻击优先级：优先攻击血量低的敌人，能击杀的优先级更高
             damage = card.get_base_value()
@@ -523,6 +590,7 @@ class GameManager:
             # 淬毒优先级：优先对血量高的敌人使用（持续伤害更有价值）
             poison_stacks = card.get_base_value()
             # 检查目标是否已经中毒
+            from LingCard.core.buff_system import BuffType
             if hasattr(target_char, 'buff_manager') and target_char.has_buff(BuffType.POISON):
                 priority += 20  # 叠加中毒层数也有价值，但优先级较低
             else:

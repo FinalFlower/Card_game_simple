@@ -7,13 +7,22 @@ Buff系统模块
 """
 
 from .poison import PoisonBuff
+from .sword_intent import SwordIntentBuff
+from .demonic import DemonicBuff
+from .shield import ShieldBuff
 
 # 导出所有buff类，便于动态加载
 __all__ = [
-    'PoisonBuff'
+    'PoisonBuff',
+    'SwordIntentBuff',
+    'DemonicBuff',
+    'ShieldBuff'
 ]
 
 # Buff类注册表，用于序列化和反序列化
 BUFF_CLASSES = {
-    'PoisonBuff': PoisonBuff
+    'PoisonBuff': PoisonBuff,
+    'SwordIntentBuff': SwordIntentBuff,
+    'DemonicBuff': DemonicBuff,
+    'ShieldBuff': ShieldBuff
 }
