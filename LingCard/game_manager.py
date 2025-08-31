@@ -368,8 +368,14 @@ class GameManager:
             chosen_char_class = available_chars.pop(choice_idx)  # 从当前玩家的可选列表中移除
             char_instance = chosen_char_class()
             # 从config加载HP
-            char_instance.max_hp = self.config['game_settings']['initial_hp']
-            char_instance.current_hp = char_instance.max_hp
+            # 特殊处理阳光角色，使用其自身的初始生命值
+            if char_instance.__class__.__name__ == "Yangguang":
+                # 阳光角色使用自己定义的70点生命值
+                pass
+            else:
+                # 其他角色使用配置文件中的初始生命值
+                char_instance.max_hp = self.config['game_settings']['initial_hp']
+                char_instance.current_hp = char_instance.max_hp
             player.characters.append(char_instance)
 
     def _ai_select_chars(self, player):
@@ -380,8 +386,14 @@ class GameManager:
             if available_chars:  # 确保还有可用角色
                 chosen_char_class = available_chars.pop(0)
                 char_instance = chosen_char_class()
-                char_instance.max_hp = self.config['game_settings']['initial_hp']
-                char_instance.current_hp = char_instance.max_hp
+                # 特殊处理阳光角色，使用其自身的初始生命值
+                if char_instance.__class__.__name__ == "Yangguang":
+                    # 阳光角色使用自己定义的70点生命值
+                    pass
+                else:
+                    # 其他角色使用配置文件中的初始生命值
+                    char_instance.max_hp = self.config['game_settings']['initial_hp']
+                    char_instance.current_hp = char_instance.max_hp
                 player.characters.append(char_instance)
         self.tui.show_message("AI 已选择角色。")
 

@@ -31,7 +31,7 @@ class EnergySystem:
         
         # 发电等级配置 - 使用固定的升级阈值
         # 默认阈值：5, 13, 24, 38, 55 (5→8→11→14→17的递增)
-        self.upgrade_thresholds = upgrade_thresholds or [5, 13, 24, 38, 55]
+        self.upgrade_thresholds = upgrade_thresholds or [10, 30, 80, 160, 250]
         self.max_generation_level = len(self.upgrade_thresholds)  # 最大发电等级为5
     
     def get_energy_limit(self) -> int:
@@ -39,9 +39,15 @@ class EnergySystem:
         return self.base_energy_limit + self.generation_level
     
     def get_action_slots_count(self) -> int:
-        """获取当前行动槽数量"""
-        return self.base_action_slots + self.generation_level
-    
+        """获取当前行动槽数量（仅在1/3/5级提升行动槽）"""
+        slots = self.base_action_slots
+        if self.generation_level >= 1:
+            slots += 1
+        if self.generation_level >= 3:
+            slots += 1
+        if self.generation_level >= 5:
+            slots += 1
+        return slots
     def can_consume_energy(self, amount: int) -> bool:
         """检查是否可以消耗指定的电能"""
         return self.current_energy >= amount
@@ -164,8 +170,8 @@ class EnergySystem:
         Returns:
             EnergySystem: 电能系统实例
         """
-        # 向后兼容：如果是旧格式，使用默认升级阈值
-        upgrade_thresholds = data.get('upgrade_thresholds', [5, 13, 24, 38, 55])
+        # 向后兼容：使用新的升级阈值
+        upgrade_thresholds = data.get('upgrade_thresholds', [10, 30, 80, 160, 250])
         
         energy_system = cls(
             base_energy_limit=data.get('base_energy_limit', 3),

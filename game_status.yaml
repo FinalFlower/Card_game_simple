@@ -1,0 +1,326 @@
+delayed_effects:
+- amount: 1
+  description: 阳光 在下回合将抽取1张行动卡（锐斩效果）
+  target_player: 阳光
+  trigger_turn: 8
+  type: draw_card
+global_info:
+  player_count: 2
+  turn_order:
+  - 1
+  - 0
+live_info:
+  current_player_idx: 1
+  current_round: 7
+  game_over: false
+  winner: null
+log:
+- 队伍效果[Cafe星河]触发，额外抽2张牌
+- 玩家1 回合开始，抽了3张牌。
+- 玩家1 的所有角色电能和行动槽已重置
+- 队伍效果[Cafe星河]触发，额外抽2张牌
+- 玩家1 回合开始，抽了3张牌。
+- 阳光 消耗 2 点电能使用 锐斩
+- 阳光 使用了行动槽
+- '添加延迟效果: 阳光 在下回合将抽取1张行动卡（锐斩效果）'
+- 获得 剑意 x1
+- 队伍状态检查：玩家1(3存活) vs 玩家2(3存活)
+players:
+- characters:
+  - action_slots:
+    - max_uses: 1
+      remaining_uses: 1
+      slot_type: BASIC
+      used_this_turn: false
+    base_energy_limit: 3
+    buffs: []
+    class: Cafe
+    current_hp: 15
+    defense_buff: 0
+    energy_system:
+      accumulated_damage: 0
+      base_action_slots: 1
+      base_energy_limit: 3
+      current_energy: 3
+      generation_level: 0
+      max_generation_level: 5
+      upgrade_thresholds: &id001
+      - 5
+      - 13
+      - 24
+      - 38
+      - 55
+    is_alive: true
+    max_hp: 15
+    name: Cafe
+    status:
+      first_damage_dealt_this_turn: false
+    upgrade_thresholds: *id001
+  - action_slots:
+    - max_uses: 1
+      remaining_uses: 1
+      slot_type: BASIC
+      used_this_turn: false
+    base_energy_limit: 3
+    buffs: []
+    class: Xinhe
+    current_hp: 15
+    defense_buff: 0
+    energy_system:
+      accumulated_damage: 0
+      base_action_slots: 1
+      base_energy_limit: 3
+      current_energy: 3
+      generation_level: 0
+      max_generation_level: 5
+      upgrade_thresholds: &id002
+      - 5
+      - 13
+      - 24
+      - 38
+      - 55
+    is_alive: true
+    max_hp: 15
+    name: 星河
+    status:
+      used_card_this_turn: false
+    upgrade_thresholds: *id002
+  - action_slots:
+    - max_uses: 1
+      remaining_uses: 0
+      slot_type: BASIC
+      used_this_turn: true
+    - max_uses: 1
+      remaining_uses: 1
+      slot_type: BASIC
+      used_this_turn: false
+    - max_uses: 1
+      remaining_uses: 1
+      slot_type: BASIC
+      used_this_turn: false
+    - max_uses: 1
+      remaining_uses: 1
+      slot_type: BASIC
+      used_this_turn: false
+    base_energy_limit: 3
+    buffs:
+    - buff_type: DEMONIC
+      category: STATUS_EFFECT
+      class: DemonicBuff
+      duration: -1
+      stacks: 1
+    - buff_type: SWORD_INTENT
+      category: BENEFICIAL
+      class: SwordIntentBuff
+      duration: -1
+      stacks: 1
+    class: Yangguang
+    current_hp: 70
+    defense_buff: 0
+    energy_system:
+      accumulated_damage: 80
+      base_action_slots: 1
+      base_energy_limit: 3
+      current_energy: 6
+      generation_level: 5
+      max_generation_level: 5
+      upgrade_thresholds: &id003
+      - 5
+      - 13
+      - 24
+      - 38
+      - 55
+    is_alive: true
+    max_hp: 170
+    name: 阳光
+    status: {}
+    upgrade_thresholds: *id003
+  custom_deck_config:
+    DrawSwordSlashCard: 1
+    ReforgeWoodenSwordCard: 1
+    RemoveScarsCard: 2
+    SharpSlashCard: 2
+    SlidingBladeCard: 2
+    SwordEdgeTurnCard: 1
+    WheelSlashCard: 1
+  deck: []
+  discard_pile:
+  - class: SharpSlashCard
+    energy_cost: 2
+    name: 锐斩
+  hand:
+  - class: DrawSwordSlashCard
+    energy_cost: 3
+    name: 拔刀斩
+  - class: RemoveScarsCard
+    energy_cost: 1
+    name: 祛痕
+  - class: SwordEdgeTurnCard
+    energy_cost: 2
+    name: 剑锋直转
+  - class: SlidingBladeCard
+    energy_cost: 1
+    name: 滑刃
+  - class: SlidingBladeCard
+    energy_cost: 1
+    name: 滑刃
+  - class: SharpSlashCard
+    energy_cost: 2
+    name: 锐斩
+  - class: RemoveScarsCard
+    energy_cost: 1
+    name: 祛痕
+  - class: WheelSlashCard
+    energy_cost: 2
+    name: 轮斩
+  - class: YangguangSpecialCard
+    energy_cost: 5
+    name: 皓日当空
+  - class: LiberationMagicBladeCard
+    energy_cost: 5
+    name: 解放.魔刀
+  has_custom_deck: true
+  id: 1
+  status:
+    used_attack_this_turn: false
+  team_effects:
+  - CAFE_XINHE
+- characters:
+  - action_slots:
+    - max_uses: 1
+      remaining_uses: 1
+      slot_type: BASIC
+      used_this_turn: false
+    base_energy_limit: 3
+    buffs: []
+    class: Xinhe
+    current_hp: 5
+    defense_buff: 0
+    energy_system:
+      accumulated_damage: 0
+      base_action_slots: 1
+      base_energy_limit: 3
+      current_energy: 3
+      generation_level: 0
+      max_generation_level: 5
+      upgrade_thresholds: &id004
+      - 5
+      - 13
+      - 24
+      - 38
+      - 55
+    is_alive: true
+    max_hp: 15
+    name: 星河
+    status:
+      used_card_this_turn: false
+    upgrade_thresholds: *id004
+  - action_slots:
+    - max_uses: 1
+      remaining_uses: 1
+      slot_type: BASIC
+      used_this_turn: false
+    base_energy_limit: 3
+    buffs: []
+    class: Liuli
+    current_hp: 5
+    defense_buff: 0
+    energy_system:
+      accumulated_damage: 0
+      base_action_slots: 1
+      base_energy_limit: 3
+      current_energy: 3
+      generation_level: 0
+      max_generation_level: 5
+      upgrade_thresholds: &id005
+      - 4
+      - 11
+      - 22
+      - 38
+      - 60
+    is_alive: true
+    max_hp: 15
+    name: 琉璃
+    status: {}
+    upgrade_thresholds: *id005
+  - action_slots:
+    - max_uses: 1
+      remaining_uses: 1
+      slot_type: BASIC
+      used_this_turn: false
+    base_energy_limit: 3
+    buffs: []
+    class: Yangguang
+    current_hp: 10
+    defense_buff: 0
+    energy_system:
+      accumulated_damage: 0
+      base_action_slots: 1
+      base_energy_limit: 3
+      current_energy: 0
+      generation_level: 0
+      max_generation_level: 5
+      upgrade_thresholds: &id006
+      - 5
+      - 13
+      - 24
+      - 38
+      - 55
+    is_alive: true
+    max_hp: 70
+    name: 阳光
+    status: {}
+    upgrade_thresholds: *id006
+  custom_deck_config:
+    DrawSwordSlashCard: 1
+    ReforgeWoodenSwordCard: 1
+    RemoveScarsCard: 2
+    SharpSlashCard: 2
+    SlidingBladeCard: 2
+    SwordEdgeTurnCard: 1
+    WheelSlashCard: 1
+  deck: []
+  discard_pile: []
+  hand:
+  - class: SharpSlashCard
+    energy_cost: 2
+    name: 锐斩
+  - class: SlidingBladeCard
+    energy_cost: 1
+    name: 滑刃
+  - class: DrawSwordSlashCard
+    energy_cost: 3
+    name: 拔刀斩
+  - class: SlidingBladeCard
+    energy_cost: 1
+    name: 滑刃
+  - class: SharpSlashCard
+    energy_cost: 2
+    name: 锐斩
+  - class: SwordEdgeTurnCard
+    energy_cost: 2
+    name: 剑锋直转
+  - class: RemoveScarsCard
+    energy_cost: 1
+    name: 祛痕
+  - class: ReforgeWoodenSwordCard
+    energy_cost: 0
+    name: 重铸.木刀
+  - class: RemoveScarsCard
+    energy_cost: 1
+    name: 祛痕
+  - class: WheelSlashCard
+    energy_cost: 2
+    name: 轮斩
+  has_custom_deck: true
+  id: 2
+  status:
+    used_attack_this_turn: false
+  team_effects:
+  - YANGGUANG_LIULI
+removed_cards:
+- ReforgeFamousBladeCard
+- ReforgeDemonBladeCard
+- ReforgeWoodenSwordCard
+- ReforgeMagicBladeCard
+- ReforgeCrudeIronCard

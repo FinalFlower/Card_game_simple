@@ -202,7 +202,10 @@ class DeckConfigManager:
             'ReforgeMagicBladeCard': '重铸.魔刀',
             
             # 解放系列卡牌
-            'LiberationMagicBladeCard': '解放.魔刀'
+            'LiberationMagicBladeCard': '解放.魔刀',
+            
+            # 专属卡牌
+            # 'YangguangSpecialCard': '皓日当空'  # 专属卡牌不显示在配卡界面
         }
         return display_names.get(card_class_name, card_class_name)
     

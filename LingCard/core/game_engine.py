@@ -304,8 +304,13 @@ class GameEngine:
             target_char = opponent_alive[target_char_idx]
             self._execute_poison(game_state, user_char, card, target_char)
         elif card.action_type == ActionType.SPECIAL:
-            # 处理特殊类型卡牌（如抽卡测试）
-            self._execute_special(game_state, user_char, card)
+            # 处理特殊类型卡牌
+            # 优先使用卡牌自身的play方法
+            if hasattr(card, 'play') and callable(card.play):
+                card.play(player, game_state)
+            else:
+                # 备用方案：使用apply_effect方法
+                self._execute_special(game_state, user_char, card)
         # 新增：处理剑技系列卡牌
         elif card.action_type in [ActionType.SWORD_ATTACK, ActionType.SWORD_SPECIAL, ActionType.SWORD_SUPPORT]:
             opponent_alive = opponent.get_alive_characters()
