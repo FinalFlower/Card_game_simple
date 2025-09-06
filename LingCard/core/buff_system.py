@@ -155,6 +155,10 @@ class Buff(ABC):
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}(type={self.buff_type.name}, stacks={self.stacks}, duration={self.duration})"
 
+    def on_turn_start(self, owner: 'Character', game_state):
+        """在回合开始时触发的效果，基类为空实现"""
+        pass
+
 
 class BuffManager:
     """

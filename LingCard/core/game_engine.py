@@ -129,18 +129,30 @@ class GameEngine:
         # 在回合开始时处理延迟效果（在抽卡之前处理，确保延迟效果能够正确应用）
         game_state.process_delayed_effects(game_state.current_round, f"player_{player.id}")
         
+        # 触发所有角色的回合开始buff
+        for char in player.get_alive_characters():
+            for buff in char.buff_manager.get_all_buffs():
+                buff.on_turn_start(char, game_state)
+        
         # 基础抽卡（现在改为1张）
         cards_to_draw = 1
         
-        # 处理抽卡测试卡的延迟抽卡效果
+        # 处理各种来源的额外抽卡效果
         total_extra_draw = 0
         for char in player.get_alive_characters():
+            # 1. 角色状态触发的延迟抽卡
             if 'next_turn_draw' in char.status and char.status['next_turn_draw'] > 0:
                 extra_draw = char.status['next_turn_draw']
                 total_extra_draw += extra_draw
-                game_state.add_log(f"{char.name} 的抽卡测试效果触发，额外抽取{extra_draw}张卡")
-                # 清除效果
-                char.status['next_turn_draw'] = 0
+                game_state.add_log(f"{char.name} 的技能效果触发，额外抽取{extra_draw}张卡")
+                char.status['next_turn_draw'] = 0 # 清除效果
+            
+            # 2. Buff触发的额外抽卡 (新增)
+            if 'buff_extra_draw' in player.status and player.status['buff_extra_draw'] > 0:
+                extra_draw = player.status['buff_extra_draw']
+                total_extra_draw += extra_draw
+                game_state.add_log(f"来自buff的增益效果，额外抽取{extra_draw}张卡")
+                player.status['buff_extra_draw'] = 0 # 清除效果
         
         cards_to_draw += total_extra_draw
         
